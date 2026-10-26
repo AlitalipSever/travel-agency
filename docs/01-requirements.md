@@ -343,11 +343,23 @@ quality scenarios in 02 §10.2.
 
 #### N1 Architecture overview
 
-- **Statement.** A concise architecture overview aligned with a Python, Django, PostgreSQL, Redis and cloud stack shall describe data flow, structure and the main design choices.
+- **Statement.** A concise architecture overview, aligned with a Python, Django, PostgreSQL,
+  Redis and cloud stack, shall describe the data flow, the structure and the main design
+  choices.
 - **Rationale.** The brief's first deliverable.
 - **Acceptance.**
-  1. arc42 sections 1 to 12 present (arc42-checklist.md), C4 context and container diagrams, every significant choice in an ADR.
-- **Satisfied by.** 02-architecture, adr/.
+  1. A one-page summary exists that stands on its own: what the system does, the container
+     diagram, the two main data flows (weather in, bookable search out), the three main
+     decisions with their trade-offs, and the stack table; under 600 words.
+  2. Every stack element is named with its role and the ADR behind it: Django and DRF (0001),
+     PostgreSQL (0007), Redis (0005), Kubernetes and cloud (0006, including the Azure values
+     profile).
+  3. The long form follows arc42 sections 1 to 12 (arc42-checklist.md) with C4 context and
+     container diagrams; the data flows are drawn now, sequence detail follows the code.
+  4. Every significant choice is an ADR with options and consequences; the summary names which
+     three are the main ones.
+  5. All diagrams render on GitHub and on the case study site.
+- **Satisfied by.** 02-architecture §0 (summary) and §3 to §7; adr/; the site's Overview page.
 
 #### N2 Clean data model
 

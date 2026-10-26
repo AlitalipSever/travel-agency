@@ -3,6 +3,49 @@
 Status: draft, 2026-10-26. Structure follows arc42 (docs.arc42.org), subsection by
 subsection; diagrams follow C4. Open items are marked `TODO` and tracked in [arc42-checklist.md](arc42-checklist.md).
 
+## 0. Summary (one page)
+
+**What it does.** A backend for a travel agency: live weather for coordinates and for the
+agency's locations, those locations grouped by temperature bracket, and a product catalogue of
+packages, destinations and dated departures with capacity, searchable by date range and danger
+score, with bookings that never oversell. It runs as a Django + DRF API with Celery workers,
+PostgreSQL and Redis, packaged as one Helm chart on Kubernetes, with a Next.js case study site
+in front.
+
+**Structure.** Four Django apps behind one API: `weather` (upstream adapter, samples, daily
+summaries), `locations` (list, seed, brackets), `catalog` (destinations, packages),
+`booking` (departures, bookings, the bookable search); `core` carries auth, errors, audit and
+health. A worker and a scheduler sit beside the API; the container diagram is in §5.1.
+
+**Two data flows.** Weather comes in on a schedule: the worker fetches every known location
+from OpenWeatherMap, upserts the slots and observations into PostgreSQL, and the API computes
+daily summaries from there; ad hoc coordinates are fetched on request and cached briefly in
+Redis. The bookable search goes out from one query: active packages whose derived danger fits,
+joined to planned departures in the date range with seats left, ordered and paged (§6).
+
+**Three main decisions.** The departure (package + date + capacity) is the sellable unit, and
+a booking takes a row lock on it, so two sales of the last seat cannot both succeed (ADR 0002;
+the alternative, capacity on the package, could not express a sold out date). The package's
+danger is derived in the query from its destinations, never stored, so a changed trail is
+reflected at once (ADR 0003; a stored column is the documented next step if measured cost
+asks for it). Known locations are never fetched on the request path: a scheduled job writes to
+PostgreSQL inside the upstream's budget and the API reads from there, with stale fallback and
+a circuit breaker (ADR 0005, 0012; the alternative, calling upstream per request, breaks under
+the free tier's limits and outages).
+
+**Stack and why.**
+
+| Element | Role | Decision |
+|---|---|---|
+| Python, Django, DRF | API, admin, ORM, migrations, OpenAPI | ADR 0001 |
+| Celery (+ beat) | Scheduled refresh, background work | ADR 0005 |
+| PostgreSQL (CloudNativePG) | Catalogue, departures, bookings, weather samples, audit | ADR 0007, 0012 |
+| Redis | Ad hoc weather cache, Celery broker | ADR 0005 |
+| Helm on k3s (Hetzner), Terraform | One chart, values per environment, including an Azure (AKS) profile | ADR 0006, 0009 |
+| Next.js | Case study site: demo, docs, operations, walkthrough | 05-work-packages W |
+
+Everything below is the long form (arc42); decisions are in [adr/](adr/README.md).
+
 ## 1. Introduction and goals
 
 ### 1.1 Requirements overview
@@ -122,6 +165,36 @@ C4Container
 the code exists.
 
 ## 6. Runtime view
+
+### 6.1 Data flows
+
+```mermaid
+flowchart LR
+  subgraph in["Weather in (scheduled, and on location create)"]
+    beat[Celery beat] -->|every 15 min| worker
+    worker -->|2 calls per location, within budget| owm[OpenWeatherMap]
+    owm --> worker
+    worker -->|upsert slots and observation| pg[(PostgreSQL WeatherSample)]
+  end
+  subgraph read["Weather out"]
+    api[API] -->|known location| pg
+    api -->|ad hoc coordinate| redis[(Redis cache)]
+    redis -.miss.-> owm
+    pg --> summary[summarize_day]
+    summary --> resp1[today + 5 days]
+  end
+```
+
+```mermaid
+flowchart LR
+  req["GET /packages/bookable?from&to&danger"] --> val[validate inputs]
+  val --> q["one query: active packages, derived danger <= given,\njoin planned departures in range, seats left"]
+  q --> pg[(PostgreSQL)]
+  pg --> order[order: earliest departure, name, id; page]
+  order --> resp["packages with matching departures,\nends_on and remaining seats"]
+```
+
+### 6.2 Scenarios
 
 `TODO (arc42 6)`: sequence diagrams once the code exists, one per scenario:
 

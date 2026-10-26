@@ -6,6 +6,7 @@ row per official subsection; the status column is updated with every change to
 
 | arc42 | Expected (per the guide) | Where | Status |
 |---|---|---|---|
+| 0 Summary (not an arc42 section; the brief's "concise overview") | One page: what, structure, flows, three decisions, stack | 02 §0 | done |
 | 1.1 Requirements overview | Short description of functional requirements, link to the source | 02 §1.1, 01-requirements | done |
 | 1.2 Quality goals | 3 to 5 goals, ISO 25010 characteristics, priority order | 02 §1.2 | done |
 | 1.3 Stakeholders | Table: role or name, contact, expectations | 02 §1.3, 00-domain §2 | done |
@@ -15,7 +16,7 @@ row per official subsection; the status column is updated with every change to
 | 4 Solution strategy | Fundamental decisions and why | 02 §4 | done |
 | 5.1 Building blocks level 1 | Whitebox overview + blackbox table (purpose, interfaces) | 02 §5.1 | partial (diagram yes, table no) |
 | 5.2 Building blocks level 2 | Zoom into selected blocks | 02 §5.2 | later |
-| 6 Runtime view | Sequence per important scenario | 02 §6 | later |
+| 6 Runtime view | Sequence per important scenario | 02 §6 | partial (data flows drawn, sequences after code) |
 | 7 Deployment view | Infrastructure, mapping of blocks to nodes | 02 §7 | partial (sizing and pod mapping) |
 | 8 Crosscutting concepts | Selected system-wide concepts | 02 §8 | done |
 | 9 Architecture decisions | ADRs | adr/ | done (13 proposed) |
