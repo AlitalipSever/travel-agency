@@ -296,13 +296,25 @@ quality scenarios in 02 §10.2.
 
 #### P5 Bookable packages search
 
-- **Statement.** Given two dates and a danger score, the system shall return the bookable packages with their data.
-- **Rationale.** The brief's required endpoint; A1 (at most), A3 (bookable), A10 (departure date) resolve its open readings.
+- **Statement.** Given two dates and a danger score, the system shall return the bookable
+  packages with their data.
+- **Rationale.** The brief's required endpoint; A1 (at most), A3 (bookable), A10 (departure
+  date) resolve its open readings.
 - **Acceptance.**
-  1. A package is returned when at least one of its departures starts inside the inclusive range, lies in the future and has seats left, and the package's danger does not exceed the given score.
-  2. Exact danger match is available on request.
-  3. Each result carries the package data and the matching departures with start date, end date and remaining seats.
-  4. Results are paginated and the query stays index backed as data grows (EXPLAIN documented).
+  1. Inputs: `from` and `to` as ISO dates with `from <= to` and a span of at most 366 days,
+     and a danger score 0 to 3; anything else is a 400 problem detail.
+  2. A package is returned when it is active, has a danger score, that score does not exceed
+     the given one, and at least one of its planned departures starts inside the inclusive
+     range, on or after today in the agency's time zone, with seats left.
+  3. Exact danger match is available on request (`danger_mode=exact`).
+  4. Each result carries the package data (P1, P4) and only the matching departures, each with
+     start date, end date, capacity and remaining seats.
+  5. Results are ordered by earliest matching departure, then package name, then id, and
+     paginated; the order is stable across pages.
+  6. Additional filters (traveller risk appetite instead of danger, type, maximum price,
+     weather) only narrow this result, never widen it (N4).
+  7. Latency: p95 under 100 ms on the seed data and under 300 ms with thousands of packages
+     and tens of thousands of departures; the query plan is documented.
 - **Satisfied by.** ADR 0002, 0003, 0011; A1, A3, A10; 04-api §Bookable search.
 
 #### P6 Booking (extra feature that gives capacity its meaning)

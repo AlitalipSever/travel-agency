@@ -168,7 +168,8 @@ Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind
 - Time: UTC in storage, IANA zone per location, local days computed in code (ADR 0013).
 - Observability: structured JSON logs, OpenTelemetry traces, `/healthz` and `/readyz`,
   Prometheus metrics when the monitoring stack is installed.
-- Configuration: environment variables only, documented in `.env.example`.
+- Configuration: environment variables only, documented in `.env.example`; operational settings
+  that operations change (bracket edges, agency time zone) live in a settings table.
 
 ## 9. Architecture decisions
 

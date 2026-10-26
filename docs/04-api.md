@@ -38,6 +38,11 @@ share is exhausted the response is 429 with `Retry-After` (W4).
 
 `GET /packages/bookable?from=YYYY-MM-DD&to=YYYY-MM-DD&danger=2`
 
+Validation: both dates required, `from <= to`, span at most 366 days, `danger` 0 to 3; else
+400 problem detail. "Today" is the agency's time zone (`settings.agency_timezone`). Only active
+packages with a danger score and `planned` departures qualify. Order: earliest matching
+departure, package name, id; page size 20 by default.
+
 Returns packages that have at least one departure with `starts_on` in `[from, to]` (inclusive;
 the range applies to the departure date, ADR 0011), in the future, with remaining seats > 0, and whose derived danger is <= `danger` (`danger_mode=exact`
 switches to equality). Each item carries the package data (including `duration_days`), its danger, and the matching
