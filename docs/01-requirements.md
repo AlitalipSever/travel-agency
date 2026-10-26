@@ -19,14 +19,32 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 
 ### 2.1 Weather
 
-- W1 Current weather for a latitude and longitude.
-- W2 Five day forecast for a latitude and longitude: one row per day with average temperature
-  and a condition label (sunny, cloudy, rain, ...).
-- W3 The free tier forecast endpoint returns 3 hour slots (40 per 5 days, from the next full
-  slot after now). Daily average and a daily condition are derived by us. One Call 3.0 would
-  give daily values but needs a paid subscription; the brief says free tier only.
-- W4 The upstream API is rate limited (60 calls per minute on the free tier) and may be slow or
-  down. The system must stay responsive and inside the limit.
+- **W1 Current weather for a coordinate.** Input: latitude and longitude, validated. Output:
+  temperature, condition label, humidity, wind, `observed_at`, and `source` (live, cache or
+  stale). Served from Redis when a value for the rounded coordinate (3 decimals) is younger
+  than 10 minutes; otherwise fetched with a timeout and bounded retries; when the upstream
+  fails, the last value is returned marked stale, never a 5xx (ADR 0005).
+- **W2 Five day forecast for a coordinate.** Output: `today` plus `days` (five, from tomorrow).
+  Per day: local `date`, `temp_avg` (the brief's number), `temp_min`, `temp_max`, `condition`,
+  `observed_samples`, `forecast_samples`, `partial`. The response carries `timezone`, `as_of`
+  and `source`. For a known location `today` is complete once samples exist; for an ad hoc
+  coordinate it is partial and says so; a day cut by the 120 hour window is marked `partial`
+  (ADR 0013, A11).
+- **W3 The upstream gives slots, not days.** The free tier returns 40 three hour slots from the
+  next full slot after now and one current observation; no daily endpoint, no history, nothing
+  beyond 120 hours. One Call 3.0 has daily values but needs a paid subscription, so it is out.
+  Therefore: temperature per day is mean, min and max over the slots of the local calendar day;
+  the condition comes from the daytime slots with significant weather first (thunderstorm,
+  rain, snow, fog), else the most frequent of cloudy and clear; upstream codes map to that
+  closed label set (ADR 0013, A12). Days are the location's local days: UTC in storage, IANA
+  zone per location, conversion in code (A13). For known locations the worker persists every
+  fetched slot and observation, so today's past hours are available (ADR 0012).
+- **W4 The upstream is rate limited and unreliable.** 60 calls per minute on the free tier;
+  it may be slow or down. Known locations are never fetched on the request path: a Celery beat
+  schedule refreshes them every 15 minutes inside a call budget, the API reads the cache and
+  the samples table. Ad hoc coordinates are fetched on cache miss with timeouts and retries. A
+  circuit breaker opens after repeated failures. The operations status reports hit ratio, last
+  refresh and budget used (ADR 0005).
 
 ### 2.2 Locations and temperature brackets
 
