@@ -15,7 +15,7 @@ Filled in as packages close (see 05-work-packages.md).
 | High availability | One server is enough for the brief; HA is a platform step, not an application change | Second node, PostgreSQL with two instances, api replicas spread by anti affinity |
 | Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
 | Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
-| Customer facing booking UI | The brief is a backend brief; the demo page covers the loop | A real front end with its own design |
+| Traveller self-service (role, booking UI) | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, GDPR access and erasure endpoints, and a front end |
 
 ## Next two weeks, if this continued
 

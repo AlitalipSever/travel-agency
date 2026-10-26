@@ -10,7 +10,8 @@ erDiagram
   Destination }o--o{ TourPackage : "part of"
   TourPackage ||--o{ Departure : "offered on"
   Departure ||--o{ Booking : "reserved by"
-  Customer ||--o{ Booking : "makes"
+  Traveller ||--o{ Booking : "made for"
+  Partner ||--o{ Booking : "made by, optional"
 
   Location {
     uuid id
@@ -47,16 +48,21 @@ erDiagram
   Booking {
     uuid id
     uuid departure_id
-    uuid customer_id
+    uuid traveller_id
+    uuid partner_id "null for the agency's own sales"
     int seats
     string idempotency_key
     enum status "confirmed, cancelled"
   }
-  Customer {
+  Traveller {
     uuid id
     string name
     string email
     int risk_appetite "0 to 3, optional"
+  }
+  Partner {
+    uuid id
+    string name
   }
 ```
 
@@ -77,13 +83,14 @@ the location's IANA zone (ADR 0013).
   annotation; not stored (ADR 0003).
 - Remaining seats = capacity minus sum(seats) of confirmed bookings. Computed in the query;
   the booking write takes a row lock on the departure (ADR 0002).
-- Package suitability for a customer = package danger <= customer risk appetite (extra feature).
+- Package suitability for a traveller = package danger <= traveller risk appetite (extra feature).
 
 ## Constraints
 
 - Departure: unique (package_id, starts_on); capacity > 0.
 - TourPackage: duration_days >= 1.
-- Booking: seats > 0; unique idempotency_key per customer.
+- Booking: seats > 0; unique idempotency_key per traveller; a `partner` user's bookings carry
+  its partner_id and are the only ones it can read.
 - Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180];
   timezone must be a valid IANA name.
 - WeatherSample: unique (location_id, slot_time, kind).

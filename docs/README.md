@@ -2,9 +2,10 @@
 
 | Document | What it answers |
 |---|---|
-| [00-domain.md](00-domain.md) | Stakeholders, actors and their jobs, ubiquitous language, roles (to be written) |
+| [00-domain.md](00-domain.md) | Who the system is for: stakeholder map, actors and their jobs, ubiquitous language, roles and permissions, domain events, questions for the client |
 | [01-requirements.md](01-requirements.md) | What the brief asks for, how it is decomposed, which gaps we fill with assumptions |
-| [02-architecture.md](02-architecture.md) | How the system is built: arc42 structure, C4 diagrams, containers, data flow, quality goals |
+| [02-architecture.md](02-architecture.md) | How the system is built: arc42 sections 1 to 9, C4 diagrams, containers, data flow |
+| [02b-quality-risks-glossary.md](02b-quality-risks-glossary.md) | arc42 sections 10 to 12: quality scenarios, risks, technical glossary |
 | [arc42-checklist.md](arc42-checklist.md) | Every official arc42 subsection, where it lives in 02 and its status |
 | [adr/](adr/README.md) | Each significant decision with its context, options and consequences |
 | [03-data-model.md](03-data-model.md) | Entities, relations, derived values, indexes |

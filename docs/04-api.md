@@ -38,15 +38,15 @@ Coordinates are validated; results are cached by rounded coordinates (3 decimals
 Returns packages that have at least one departure with `starts_on` in `[from, to]` (inclusive;
 the range applies to the departure date, ADR 0011), in the future, with remaining seats > 0, and whose derived danger is <= `danger` (`danger_mode=exact`
 switches to equality). Each item carries the package data (including `duration_days`), its danger, and the matching
-departures with `starts_on`, `ends_on` and remaining seats. Paginated. Optional extras: `customer={id}` applies the
-customer's risk appetite instead of `danger`; `type`, `price_max`; `weather=warm` keeps
+departures with `starts_on`, `ends_on` and remaining seats. Paginated. Optional extras: `traveller={id}` applies the
+traveller's risk appetite instead of `danger`; `type`, `price_max`; `weather=warm` keeps
 packages whose destinations' forecast average is above a threshold.
 
 ## Bookings
 
 | Method | Path | What |
 |---|---|---|
-| POST | `/bookings` | `departure_id, customer_id, seats`, header `Idempotency-Key`; 201 or 409 when sold out |
+| POST | `/bookings` | `departure_id, traveller_id, seats`, header `Idempotency-Key`; 201 or 409 when sold out; partner_id from the token |
 | GET | `/bookings/{id}` | |
 | POST | `/bookings/{id}/cancel` | |
 
@@ -61,5 +61,7 @@ packages whose destinations' forecast average is above a threshold.
 
 ## Auth
 
-Token in `Authorization: Token ...`. Groups: `staff` (write everywhere, admin), `client`
-(read, create bookings). Weather and brackets endpoints are readable with the client token.
+Token in `Authorization: Token ...`, one role per user (00-domain.md section 5): `ops` writes
+the catalogue and departures and uses the admin; `sales` searches, books and cancels; `partner`
+does the same for its own travellers and sees only its own bookings; `finance` reads
+everything. Every role reads weather, brackets and the catalogue.

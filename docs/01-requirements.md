@@ -65,7 +65,7 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 | A5 | Which capital for Bolivia | Sucre (constitutional); La Paz recorded as a second location | 03-data-model |
 | A6 | Danger score scale | Integer 0 to 3: none, low, medium, high | 0003 |
 | A7 | Currency of price | One currency per package, default EUR, stored as decimal plus ISO code | 03-data-model |
-| A8 | Who calls the API | Agency staff (write) and client applications (read); token auth, two roles | 04-api |
+| A8 | Who calls the API | Operations, sales and finance of the agency, and partner agencies' systems; travellers never call the API directly in this iteration. Token auth, roles `ops`, `sales`, `partner`, `finance` | 00-domain §5 |
 | A9 | Framework | Django + DRF as the brief's stack implies, not FastAPI | 0001 |
 | A10 | "Between two dates": the departure inside the range, or the whole trip | The departure date inside the range (industry convention, the data the brief gives); packages get `duration_days` so each departure also reports `ends_on` | 0011 |
 | A11 | Does "next five days" include today, and how are cut days reported | Response has `today` and `days` (five, from tomorrow). Today is complete for known locations once samples exist (0012), partial for ad hoc coordinates; a day cut by the 120 hour window is marked `partial`; every day reports its sample counts | 0013 |
@@ -77,7 +77,8 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 Payments, user registration and password flows, multi tenancy, a customer facing booking
 front end, internationalisation. Each is named in 07-roadmap.md with what it would take.
 
-## 5. Open questions for the client
+## 5. Questions I would ask the client first
 
-None blocking. The assumptions above would be confirmed in the first review; each is a one line
-change if the answer differs.
+Listed with the working assumption behind each in [00-domain.md](00-domain.md) section 7.
+None blocks the work: every answer that differs from the assumption is a small, localised
+change, and the assumptions above say where.

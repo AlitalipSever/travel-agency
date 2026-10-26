@@ -1,8 +1,8 @@
 # 02 Architecture
 
 Status: draft, 2026-10-26. Structure follows arc42 (docs.arc42.org), subsection by
-subsection; diagrams follow C4. Open items are marked `TODO` and tracked in
-[arc42-checklist.md](arc42-checklist.md).
+subsection; diagrams follow C4. Sections 10 to 12 are in [02b-quality-risks-glossary.md](02b-quality-risks-glossary.md). Open
+items are marked `TODO` and tracked in [arc42-checklist.md](arc42-checklist.md).
 
 ## 1. Introduction and goals
 
@@ -26,8 +26,11 @@ Top goals in priority order, named after ISO 25010 characteristics:
 
 ### 1.3 Stakeholders
 
-`TODO (arc42 1.3)`: table with role, contact or channel, expectations; actors marked. Source:
-[00-domain.md](00-domain.md) once written (stakeholder onion, actors, jobs to be done).
+Defined in [00-domain.md](00-domain.md) section 2 (role, channel, expectations, actor). In
+short: the agency owner commissions and reads; operations, sales, finance and partner agencies
+are the actors (roles `ops`, `sales`, `finance`, `partner`); travellers are data subjects, not
+users, in this iteration; regulators and suppliers are indirect; the operator and
+OpenWeatherMap sit inside the system boundary.
 
 ## 2. Constraints
 
@@ -45,23 +48,35 @@ Top goals in priority order, named after ISO 25010 characteristics:
 
 ```mermaid
 C4Context
-  Person(staff, "Agency staff", "Manages locations, destinations, packages, departures")
-  Person(client, "Client application", "Reads weather, brackets, bookable packages; books")
+  Person(ops, "Operations", "Manages locations, destinations, packages, departures")
+  Person(sales, "Sales / Finance", "Searches, books, cancels; reads bookings")
+  System_Ext(partner, "Partner agency system", "Searches and books for its travellers")
   System(travel-agency, "Travel Agency", "Travel agency backend and case study site")
   System_Ext(owm, "OpenWeatherMap", "Current weather and 5 day / 3 hour forecast")
-  Rel(staff, travel-agency, "HTTPS, token")
-  Rel(client, travel-agency, "HTTPS, token")
+  Rel(ops, travel-agency, "HTTPS, token")
+  Rel(sales, travel-agency, "HTTPS, token")
+  Rel(partner, travel-agency, "HTTPS, token")
   Rel(travel-agency, owm, "HTTPS, API key, rate limited")
 ```
 
-`TODO (arc42 3.1)`: table of communication partners with their domain inputs and outputs;
-actors to be revised after 00-domain.md (roles beyond staff and client).
+| Partner | Inputs to the system | Outputs from the system |
+|---|---|---|
+| Operations | Locations, destinations, packages, departures, capacity, bracket edges | Admin views, sold-out state, refresh status |
+| Sales | Search criteria (dates, danger, traveller), bookings, cancellations | Bookable packages with departures and seats, booking confirmations |
+| Finance | Date ranges | Bookings with price and departure |
+| Partner agency system | Search criteria, bookings for its own travellers | Same as sales, scoped to its bookings |
+| OpenWeatherMap | Coordinates, API key | Current observation, 40 three hour forecast slots |
 
 ### 3.2 Technical context
 
-`TODO (arc42 3.2)`: channels and protocols per partner (HTTPS + token for users and partner
-systems, HTTPS + API key to OpenWeatherMap, SQL and Redis protocol inside the cluster, S3 for
-backups) and which input or output travels over which channel.
+| Channel | Protocol | Carries |
+|---|---|---|
+| Public API | HTTPS, JSON, `Authorization: Token`, OpenAPI 3 | Every input and output of operations, sales, finance and partners |
+| Django admin | HTTPS, session | Operations' catalogue edits (same data as the API) |
+| Upstream weather | HTTPS, API key in query, JSON | Coordinates out; observations and forecast slots in |
+| Cluster internal | PostgreSQL wire protocol, Redis protocol (TLS off inside the node) | Persistence, cache, task queue |
+| Backups | S3 API over HTTPS | PostgreSQL base backups and WAL |
+| Delivery | HTTPS to ghcr.io and the Kubernetes API | Images and Helm releases |
 
 ## 4. Solution strategy
 
@@ -144,7 +159,8 @@ Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind
 ## 8. Cross cutting concepts
 
 - Errors: RFC 7807 problem details on every non 2xx response.
-- Auth: token per user; roles `TODO` pending 00-domain.md (today: staff, client). Admin for staff.
+- Auth: token per user, one role per user: `ops`, `sales`, `partner` (scoped to its own
+  bookings), `finance` (00-domain.md section 5). Admin for `ops`.
 - Audit: who changed what and when on catalogue and departures; soft delete.
 - Idempotency: booking requests carry an idempotency key.
 - Time: UTC in storage, IANA zone per location, local days computed in code (ADR 0013).
@@ -155,44 +171,3 @@ Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind
 ## 9. Architecture decisions
 
 See [adr/README.md](adr/README.md).
-
-## 10. Quality requirements
-
-### 10.1 Quality requirements overview
-
-`TODO (arc42 10.1)`: quality tree from the four goals in 1.2 down to the scenarios in 10.2.
-
-### 10.2 Quality scenarios
-
-Short form: context, stimulus, response, metric. U = usage scenario, C = change scenario.
-
-| Id | Type | Stimulus | Response | Metric |
-|---|---|---|---|---|
-| Q1 | U | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints answer from cache, marked stale; refresh job backs off | 0 upstream-caused 5xx; p95 latency unchanged |
-| Q2 | U | 13 locations refreshed every 15 minutes | Within the upstream budget; samples pruned at 90 days | < 5 calls/min of 60; table < 40k rows |
-| Q3 | U | Two bookings for the last seat at the same moment | One succeeds, one gets 409 | 0 overbookings in the concurrency test |
-| Q4 | U | Deploy a new api version | Rolling update, migrations first | 0 failed requests during rollout |
-| Q5 | U | Server lost | Terraform recreates, Helm reinstalls, PostgreSQL restored | restore drill under 30 minutes; RPO one night |
-| Q6 | C | Client changes the danger semantics to exact match | One query change, tests updated | under one hour, one ADR |
-| Q7 | C | A new weather provider | New adapter behind the same interface | no change outside `weather` |
-
-## 11. Risks and technical debt
-
-| Priority | Risk or debt | Consequence | Measure |
-|---|---|---|---|
-| 1 | Single node, single disk | Outage on server loss until restored | Backups + restore drill now; second node and replica in the roadmap |
-| 2 | Free tier weather data | No history, 3 hour resolution, 120 hour window | Persisted samples (ADR 0012); paid tier if the client needs more |
-| 3 | Operator-managed database with one instance | No failover | Two instances is one setting once a second node exists |
-| 4 | First day after deployment | Today's summary partial | Stated in the response (`partial`) |
-
-## 12. Glossary
-
-| Term | Definition |
-|---|---|
-| Departure | A package on one date with its capacity; ends after the package's duration |
-| Bookable | Departure in the requested range, in the future, with seats remaining |
-| Danger score | 0 none, 1 low, 2 medium, 3 high; a package's score is the max of its destinations |
-| Weather sample | One 3 hour forecast slot or one observation for a known location, stored in UTC |
-| Local day | The calendar day in the location's IANA zone |
-
-`TODO (arc42 12)`: merge with the ubiquitous language glossary of 00-domain.md once written.
