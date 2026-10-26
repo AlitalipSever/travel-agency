@@ -395,12 +395,19 @@ quality scenarios in 02 §10.2.
 
 #### N3 Performance, stability, maintainability
 
-- **Statement.** The system shall meet the quality scenarios defined for it and follow the structure rules of the repository.
-- **Rationale.** The brief names the three words; scenarios make them measurable.
+- **Statement.** The system shall respond within its latency targets, keep working when its
+  dependencies fail, and stay easy to change.
+- **Rationale.** The brief names the three; ISO 25010 calls them time behaviour, reliability
+  and maintainability; the scenarios in 02 §10.2 make them measurable.
 - **Acceptance.**
-  1. Quality scenarios Q1 to Q7 in 02 §10.2 pass (latency unchanged in an upstream outage, zero overbookings, zero failed requests during a deploy, restore under 30 minutes, bounded change effort).
-  2. Files under 200 lines, thin views, services per app, tests at the seams (AGENTS.md).
-- **Satisfied by.** 02 §10.2; AGENTS.md; CI.
+  1. Performance: the latency targets of W1 and P5 hold on the seed data and are checked by a
+     timed test; list endpoints run a bounded number of queries (no N+1), asserted in tests.
+  2. Stability: Q1 (upstream outage), Q3 (last seat), Q4 (deploy) and Q5 (restore) pass;
+     liveness and readiness probes are in place.
+  3. Maintainability: Q6 and Q7 (change scenarios) hold; CI runs lint, type check and tests on
+     every push and blocks a merge on failure; code files stay under 200 lines with thin views
+     and services per app (AGENTS.md).
+- **Satisfied by.** 02 §10.2; AGENTS.md; CI; tests.
 
 #### N4 Extra features
 
