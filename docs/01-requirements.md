@@ -135,14 +135,24 @@ quality scenarios in 02 §10.2.
 
 #### L1 Manageable location list
 
-- **Statement.** Operations shall create, read, update and delete locations (name, country, coordinates, time zone) without developer help.
+- **Statement.** Operations shall create, read, update, deactivate and delete locations (name,
+  country, coordinates, time zone) without developer help.
 - **Rationale.** The brief: "the list of locations should be manageable".
 - **Acceptance.**
-  1. All four operations are available through the API to the `ops` role and through the admin.
-  2. Coordinates and time zone are validated on write (ranges, valid IANA name).
-  3. A deleted location disappears from listings and brackets but keeps its history and its weather samples.
-  4. A newly created location has current weather and forecast data within one minute, without waiting for the next scheduled refresh.
-- **Satisfied by.** ADR 0001 (Django admin and DRF); 04-api §Locations; 00-domain §5 (roles).
+  1. All operations are available through the API to the `ops` role and through the admin;
+     every role can read locations.
+  2. Writes are validated: coordinate ranges, a valid IANA time zone, and uniqueness of name
+     and country. If the time zone is omitted it is derived from the coordinates (offline
+     lookup) and can be overridden.
+  3. A deactivated location leaves listings, brackets and the scheduled refresh but keeps its
+     data and can be reactivated.
+  4. A location with active destinations cannot be deleted; the response names them. A deleted
+     location disappears from listings and brackets but keeps its history and its weather
+     samples.
+  5. Creating a location triggers an immediate weather refresh; data is available within one
+     minute. A later coordinate correction takes effect at the next scheduled refresh.
+  6. Every write is recorded with actor and time.
+- **Satisfied by.** ADR 0001; 04-api §Locations; 00-domain §5; 02 §8 (audit).
 
 #### L2 Initial data
 

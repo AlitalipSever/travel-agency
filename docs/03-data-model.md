@@ -92,7 +92,9 @@ the location's IANA zone (ADR 0013).
 - Booking: seats > 0; unique idempotency_key per traveller; a `partner` user's bookings carry
   its partner_id and are the only ones it can read.
 - Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180];
-  timezone must be a valid IANA name.
+  timezone must be a valid IANA name, derived from the coordinates with an offline lookup when
+  not given; `active = false` removes it from brackets and the refresh without deleting;
+  delete is refused while active destinations reference it.
 - WeatherSample: unique (location_id, slot_time, kind).
 - Destination danger in [0, 3].
 

@@ -18,8 +18,8 @@ share is exhausted the response is 429 with `Retry-After` (W4).
 
 | Method | Path | What |
 |---|---|---|
-| GET, POST | `/locations` | List, create (staff) |
-| GET, PATCH, DELETE | `/locations/{id}` | Detail, update, soft delete (staff) |
+| GET, POST | `/locations` | List, create (`ops`); `timezone` optional, derived from coordinates when omitted; creation triggers an immediate refresh |
+| GET, PATCH, DELETE | `/locations/{id}` | Detail, update (including `active`), soft delete (`ops`); DELETE answers 409 with the active destinations when any exist |
 | GET | `/locations/brackets` | Locations grouped by current temperature bracket; bracket edges and `refreshed_at` in the response |
 | POST | `/locations/refresh` | Trigger a refresh now (staff); returns the task id |
 
