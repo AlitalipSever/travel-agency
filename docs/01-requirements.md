@@ -366,9 +366,8 @@ quality scenarios in 02 §10.2.
 - **Statement.** The data model shall be normalised, explicit about its constraints, consistent
   in naming and types, and small enough to read in one sitting.
 - **Rationale.** The brief: "model the data in a clean and professional way". The rules below
-  follow the sources listed in 03-data-model §Conventions (SQL standard constraints, the
-  PostgreSQL "Don't Do This" list, ISO 4217 / 3166 / 8601, the IANA zone names, DAMA-DMBOK's
-  conceptual to physical split, Fowler's Money and Snapshot patterns).
+  follow the standards and practices tracked in 03-data-model §"Standards and practices
+  followed" (each with where it applies and how it is checked).
 - **Acceptance.**
   1. Integrity rules live in the database (foreign keys, unique constraints, CHECKs for danger
      0 to 3, capacity >= 1, duration >= 1, coordinate ranges, booking seats >= 1) and are

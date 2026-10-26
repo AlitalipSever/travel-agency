@@ -141,16 +141,54 @@ and, where soft delete applies, `deleted_at`. Change history is kept by database
 per-table history tables with the acting user and request (ADR 0014), readable "as of" a time.
 Bookings are never deleted; they are cancelled.
 
-## Conventions and sources
+## Standards and practices followed
 
-| Rule | Source |
-|---|---|
-| Integrity in the database: FK, UNIQUE, CHECK; application validation mirrors it | SQL standard (ISO/IEC 9075); PostgreSQL docs |
-| `timestamptz` not `timestamp`; `numeric` not `money` or floats; `text` + CHECK not `varchar(n)`; identity or UUID keys; lower case snake_case | PostgreSQL wiki "Don't Do This" |
-| Money = `numeric(12,2)` + ISO 4217 code; booking keeps price and danger at booking time | Fowler, Money and Snapshot patterns; ISO 4217 |
-| Country codes ISO 3166-1 alpha-2; dates ISO 8601; zones IANA names | ISO 3166, ISO 8601, IANA tz database |
-| Conceptual model (00-domain) separate from logical and physical (this file) | DAMA-DMBOK |
-| Third normal form; derived values computed unless an ADR stores them | Codd; ADR 0003 |
-| History by triggers, "as of" reads | SQL:2011 system versioning (emulated, ADR 0014) |
-| Indexes justified by named queries with documented plans | PostgreSQL EXPLAIN practice |
-| Schema and diagram kept equal by generation or test | pgTAP / graph_models practice |
+What this model follows, where it shows, and how it is checked. Items marked "noted" are
+known alternatives that were considered and not adopted, with the reason.
+
+### Standards
+
+| Source | Rule adopted | Where | Checked by |
+|---|---|---|---|
+| ISO/IEC 9075 (SQL) | Integrity in the database: FOREIGN KEY, UNIQUE, CHECK; `timestamp with time zone` | every table; N2.1, N2.3 | migrations, `test_schema.py` |
+| ISO/IEC 9075:2011 system-versioned tables | Not available in PostgreSQL; emulated with trigger-filled history tables | ADR 0014; N2.5 | history tables exist and fill in tests |
+| ISO 8601 | Dates and timestamps in the API and in storage | all `_on` / `_at` columns; API | serializer tests |
+| ISO 4217 | Currency as a three letter code beside `numeric(12,2)` | Package.currency, Booking.currency; A7, A15 | CHECK on length and a known-code list |
+| ISO 3166-1 alpha-2 | Country codes on locations | Location.country_code; L2 | CHECK, seed |
+| IANA tz database | Zone names on locations; local-day computation | Location.timezone; A13, ADR 0013 | validation against `zoneinfo` |
+| ISO/IEC 11179 (metadata) | Every column has a name, type, definition and allowed values | this file's entity blocks; 00-domain §4 glossary | review |
+| ISO/IEC 25012 / ISO 8000 (data quality) | Completeness and currency made visible, not hidden | `partial`, sample counts, `observed_at`, `stale` (W2, L3) | API tests |
+| IDEF1X / IE notation | Crow's foot ER diagram | this file (Mermaid `erDiagram`) | renders on GitHub and the site |
+
+### Bodies of knowledge and patterns
+
+| Source | Rule adopted | Where | Checked by |
+|---|---|---|---|
+| DAMA-DMBOK | Conceptual model separate from logical and physical | 00-domain (conceptual), this file (logical, physical) | review |
+| Codd, normal forms | Third normal form; derived values computed, not stored | package danger, remaining seats, end date; ADR 0003, 0011 | no derived columns in migrations |
+| Fowler, Money pattern | `numeric(12,2)` + currency code, never `money` or floats | prices | CHECK, type assertions in tests |
+| Fowler, Snapshot pattern | Booking keeps price and danger at booking time | Booking; P1.2, P4.5 | booking tests |
+| Kimball, slowly changing dimensions | History kept in separate per-table history tables (type 4 like) | ADR 0014 | history tests |
+| Evans, DDD aggregates | Departure + Booking is one consistency boundary (row lock there); Package + destinations another | ADR 0002; booking service | concurrency test (P6.2) |
+
+### PostgreSQL and Django practice
+
+| Source | Rule adopted | Where | Checked by |
+|---|---|---|---|
+| PostgreSQL wiki "Don't Do This" | `timestamptz`; `numeric`; `text` + CHECK not `varchar(n)`; no `char(n)`, no `money`, no `timetz`; identity or UUID keys; lower case identifiers | all tables; N2.3 | squawk / review of migrations |
+| PostgreSQL docs, constraints and indexes | Indexes only for named queries; plans documented; `NOT VALID` then `VALIDATE` for constraints on large tables | P5, L3, W2 indexes; N2.6 | EXPLAIN files in `docs/plans/` |
+| SQL style (Holywell) and Django defaults | snake_case, Django's `app_model` table names kept consistently, 63 char limit respected | all tables | review |
+| Zero downtime migrations (django-pg-zero-downtime-migrations rules) | NOT NULL with default, `CREATE INDEX CONCURRENTLY`, two-step column removal | migrations; Q4 | squawk in CI |
+| Django `Meta.constraints` | CHECK and UNIQUE declared on models so they land in migrations | all models | migration review |
+| UUID keys | UUIDv7 (time ordered) when the library is available, else v4; small data, difference noted only | all tables | ADR note |
+
+### Tools
+
+| Tool | Use here | Status |
+|---|---|---|
+| `django-extensions graph_models` | Generate the ER diagram from models and diff against this file | planned (N2.7) |
+| `pgTAP` or a Django schema test | Assert tables, columns, constraints exist | planned (`core/tests/test_schema.py`) |
+| `squawk` | Lint migrations for locking and unsafe patterns | planned (CI) |
+| `sqlfluff` | Lint hand-written SQL (plans, seeds) | optional |
+| `django-pghistory` | Trigger-based history with actor context | planned (ADR 0014) |
+| `pgaudit` | Database-level audit of statements | noted, not adopted: application-level history answers the requirement; pgaudit is an operator tool |
