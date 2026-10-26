@@ -5,23 +5,28 @@ subsection; diagrams follow C4. Open items are marked `TODO` and tracked in [arc
 
 ## 0. Summary (one page)
 
-**What it does.** A backend for a travel agency: live weather for coordinates and for the
-agency's locations, those locations grouped by temperature bracket, and a product catalogue of
-packages, destinations and dated departures with capacity, searchable by date range and danger
-score, with bookings that never oversell. It runs as a Django + DRF API with Celery workers,
-PostgreSQL and Redis, packaged as one Helm chart on Kubernetes, with a Next.js case study site
-in front.
+**What it does, and for whom.** A backend for a travel agency: live weather for coordinates
+and for the agency's locations, those locations grouped by temperature bracket, and a product
+catalogue of packages, destinations and dated departures with capacity, searchable by date
+range and danger score, with bookings that never oversell. Operations manage the catalogue,
+sales and partner agencies search and book, finance reads; travellers are served through them
+and never call the API (00-domain). It runs as a Django + DRF API with Celery workers,
+PostgreSQL and Redis, packaged as one Helm chart on Kubernetes, with a Next.js case study
+site in front. Requirements and the sixteen assumptions that close the brief's gaps are in
+01-requirements.
 
 **Structure.** Four Django apps behind one API: `weather` (upstream adapter, samples, daily
 summaries), `locations` (list, seed, brackets), `catalog` (destinations, packages),
-`booking` (departures, bookings, the bookable search); `core` carries auth, errors, audit and
-health. A worker and a scheduler sit beside the API; the container diagram is in §5.1.
+`booking` (departures, bookings, the bookable search); `core` carries token auth with the
+four roles, problem-detail errors, trigger-based change history and health. A worker and a
+scheduler sit beside the API; the container diagram is in §5.1.
 
 **Two data flows.** Weather comes in on a schedule: the worker fetches every known location
-from OpenWeatherMap, upserts the slots and observations into PostgreSQL, and the API computes
-daily summaries from there; ad hoc coordinates are fetched on request and cached briefly in
-Redis. The bookable search goes out from one query: active packages whose derived danger fits,
-joined to planned departures in the date range with seats left, ordered and paged (§6).
+from OpenWeatherMap (and a new location at once), upserts the slots and observations into
+PostgreSQL, and the API computes daily summaries from there; ad hoc coordinates are fetched
+on request and cached briefly in Redis. The bookable search goes out from one query: active
+packages whose derived danger fits, joined to planned departures in the date range with seats
+left, ordered and paged, each with its end date and remaining seats (§6).
 
 **Three main decisions.** The departure (package + date + capacity) is the sellable unit, and
 a booking takes a row lock on it, so two sales of the last seat cannot both succeed (ADR 0002;
@@ -33,15 +38,21 @@ PostgreSQL inside the upstream's budget and the API reads from there, with stale
 a circuit breaker (ADR 0005, 0012; the alternative, calling upstream per request, breaks under
 the free tier's limits and outages).
 
+**Quality order and limits.** Reliability toward the upstream first, then correctness of
+capacity and danger, then operability, then maintainability (§1.2). One server, no high
+availability, no event streaming, no payments or traveller self-service in this iteration;
+each is in 07-roadmap with what it would take.
+
 **Stack and why.**
 
 | Element | Role | Decision |
 |---|---|---|
-| Python, Django, DRF | API, admin, ORM, migrations, OpenAPI | ADR 0001 |
-| Celery (+ beat) | Scheduled refresh, background work | ADR 0005 |
-| PostgreSQL (CloudNativePG) | Catalogue, departures, bookings, weather samples, audit | ADR 0007, 0012 |
+| Python, Django, DRF | API, admin for operations, ORM, migrations, OpenAPI | ADR 0001 |
+| Celery (+ beat) | Scheduled and on-create weather refresh | ADR 0005 |
+| PostgreSQL (CloudNativePG) | Catalogue, departures, bookings, weather samples, history tables | ADR 0007, 0012, 0014 |
 | Redis | Ad hoc weather cache, Celery broker | ADR 0005 |
-| Helm on k3s (Hetzner), Terraform | One chart, values per environment, including an Azure (AKS) profile | ADR 0006, 0009 |
+| OpenWeatherMap, free tier | Current weather and 3 hour forecast slots; the only external data source | F1 to F3 |
+| Helm on k3s (Hetzner ARM), Terraform, ingress-nginx, cert-manager | One chart, values per environment including an Azure (AKS) profile; HTTPS | ADR 0006, 0009 |
 | Next.js | Case study site: demo, docs, operations, walkthrough | 05-work-packages W |
 
 Everything below is the long form (arc42); decisions are in [adr/](adr/README.md).
