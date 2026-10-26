@@ -112,13 +112,22 @@ The expectations that shaped the architecture most:
 
 ## 2. Constraints
 
-| Kind | Constraint | Source |
-|---|---|---|
-| Technical | Python, Django, DRF, PostgreSQL, Redis | the brief; ADR 0001 |
-| Technical | OpenWeatherMap free tier: 60 calls/min, 3 hour slots, 120 hour window, no history | upstream; ADR 0005, 0012 |
-| Technical | Portable: only PostgreSQL, Redis, S3 compatible storage, OpenTelemetry as dependencies | ADR 0006 |
-| Organisational | One developer, a few days; delivered as a live system plus documents | project setting |
-| Convention | English; ADR per decision; files under 200 lines; no secrets in git | AGENTS.md |
+What was imposed on the design, by whom, and how the design complies or deviates.
+
+| Group | Constraint | Source | How we comply or deviate |
+|---|---|---|---|
+| Given by the brief | Python, Django, PostgreSQL, Redis | the brief's stack | Complied; DRF and Celery are our additions on top (ADR 0001, 0005) |
+| Given by the brief | Cloud: "Azure or AWS" | the brief's stack | **Deviates for the demo**: k3s on a Hetzner server for cost and portability; an AKS values profile is kept and documented, the application has no provider-specific dependency (ADR 0006) |
+| Given by the brief | Weather from OpenWeatherMap, free tier only | the brief | Complied; shapes W3, W4 and ADR 0005, 0012 |
+| Environment | Upstream data shape, limits, unreliability, time zone rules, uncontrolled callers | F1 to F5 in 01-requirements | Scheduled refresh into PostgreSQL, budget split, circuit breaker, IANA zones, per-caller limits |
+| Organisational, budget | Short fixed time box; one developer; one environment (no staging); no on-call; low monthly cost (one small server, free tiers) | project setting | Scope cut by work packages (05); risks of a single node named in §11 and the roadmap |
+| Legal | Traveller personal data (name, email) falls under GDPR: minimise, protect, be able to erase; no payment data is ever stored | 00-domain §2 (regulators) | Only name and email kept; no card or payment fields; access by role; history tables carry data changes; erasure flow in the roadmap |
+| Self-imposed | Portability: the application depends only on PostgreSQL, Redis, S3 compatible storage and OpenTelemetry | ADR 0006 | One Helm chart, values per environment (Hetzner, local kind, AKS) |
+| Conventions | English; requirements in the ISO 29148 form with acceptance checks; one MADR per decision with Addresses line; arc42 + C4 for architecture; data model standards table (03); code files under 200 lines, documents exempt; ruff, mypy, pytest; Next.js App Router with shadcn/ui; no secrets in git; no AI attribution in commits | AGENTS.md, 01 §2, 03 | Checked in review and CI |
+
+Degrees of freedom: the framework and the data stores are fixed by the brief; the cloud
+provider, the Kubernetes distribution, the libraries inside the stack and the deployment
+topology were free, and the choices are argued in ADR 0005 to 0009 and 0014.
 
 ## 3. Context and scope
 

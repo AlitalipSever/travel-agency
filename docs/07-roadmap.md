@@ -22,7 +22,8 @@ Filled in as packages close (see 05-work-packages.md).
 | Notifying booked travellers when a destination's danger rises | Needs a notification channel and a policy; the change itself is audited and will raise an event (P2, ADR 0008) | Consumer of DestinationDangerChanged that finds affected bookings and informs sales |
 | Per-departure pricing and seasonal prices | One price per package is what the brief describes (A15) | A price on the departure overriding the package's, and a price history |
 | Unit systems other than metric | Celsius is natural for the agency and its markets (A14) | A `units` query parameter converting at the edge |
-| Traveller self-service (role, booking UI) | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, GDPR access and erasure endpoints, and a front end |
+| Traveller self-service (role, booking UI) | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, and a front end |
+| GDPR access and erasure flows | Personal data is minimal (name, email) and erasure is an operations task today | Export and erasure endpoints that anonymise the traveller while keeping booking counts; retention rules on history tables |
 
 ## Next two weeks, if this continued
 

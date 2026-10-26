@@ -516,7 +516,9 @@ quality scenarios in 02 §10.2.
 ## 4. Out of scope, deliberately
 
 Payments and refunds, user registration and password flows, traveller self-service, multi
-tenancy, internationalisation, event streaming and high availability. The full list, each with
+tenancy, internationalisation, event streaming and high availability. Traveller personal data
+is kept to name and email (GDPR data minimisation); a self-service erasure flow is out of
+scope and in the roadmap, erasure on request is an operations task. The full list, each with
 why it is left out and what it would take, is 07-roadmap.md; it also holds the policy items a
 real agency would ask about next (holds, fees, cut-off, notifications).
 
