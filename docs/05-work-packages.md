@@ -20,8 +20,8 @@ web), with the order and the dependencies. Each package is one to three tickets'
 | Id | Package | Depends on | Done when |
 |---|---|---|---|
 | B1 | Django project skeleton, settings by env, DRF, OpenAPI, RFC 7807, health, Dockerfile | | `docker compose up` serves `/api/docs` |
-| B2 | Weather adapter: client, timeouts, retries, cache, stale fallback, aggregation to days | B1 | W1, W2 pass with a mocked upstream and a live key |
-| B3 | Locations: model, seed, CRUD, admin | B1 | Capitals listed; admin edits work |
+| B2 | Weather adapter: client, timeouts, retries, cache, stale fallback; sample persistence; daily summary rules (mean, min, max, daytime significant weather, local day) | B1 | W1, W2 pass with a mocked upstream and a live key; table test for the condition rules |
+| B3 | Locations: model with IANA time zone, seed, CRUD, admin | B1 | Capitals listed with zones; admin edits work |
 | B4 | Brackets: configurable edges, grouping endpoint, Celery refresh task and schedule | B2, B3 | Brackets endpoint answers from cache; refresh visible |
 | B5 | Catalogue: destination, package, departure models, CRUD, admin, seed | B3 | Three packages with departures visible |
 | B6 | Bookable query: date range, danger derivation, remaining seats, pagination, indexes | B5 | Endpoint and tests; EXPLAIN documented |

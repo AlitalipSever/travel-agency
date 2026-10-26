@@ -8,7 +8,7 @@ Status: draft, 2026-10-26. Base path `/api/v1`. OpenAPI schema at `/api/schema`,
 | Method | Path | What |
 |---|---|---|
 | GET | `/weather/current?lat=&lon=` | Current temperature, condition, humidity, wind, `observed_at`, `source: live or cache or stale` |
-| GET | `/weather/forecast?lat=&lon=` | Five rows: date, average temperature, min, max, condition |
+| GET | `/weather/forecast?lat=&lon=` | `today` plus `days` (five, from tomorrow); per day local `date`, `temp_avg`, `temp_min`, `temp_max`, `condition`, `observed_samples`, `forecast_samples`, `partial`; response carries `timezone`, `as_of`, `source` (ADR 0013). For a known location `today` is complete once samples exist (ADR 0012) |
 
 Coordinates are validated; results are cached by rounded coordinates (3 decimals, about 100 m).
 

@@ -16,7 +16,6 @@ Filled in as packages close (see 05-work-packages.md).
 | Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
 | Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
 | Customer facing booking UI | The brief is a backend brief; the demo page covers the loop | A real front end with its own design |
-| Weather history | Not asked; cheap to add | `WeatherSnapshot` rows written by the refresh job, a comparison endpoint |
 
 ## Next two weeks, if this continued
 
@@ -24,7 +23,7 @@ Filled in as packages close (see 05-work-packages.md).
 2. Outbox and domain events for bookings; a notification consumer.
 3. Rate limiting and quotas on the public API.
 4. Second node and PostgreSQL replica; load test with k6 and the numbers in this file.
-5. Weather history and a "same week last year" comparison for the brackets page.
+5. A "same day last week" comparison on the brackets page, from the persisted weather samples.
 6. Contract tests against the OpenAPI schema; generated TypeScript client for the site.
 
 ## How this grows with a larger team

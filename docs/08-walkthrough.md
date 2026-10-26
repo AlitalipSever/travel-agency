@@ -6,7 +6,7 @@ same sections.
 1. **It runs.** Open the live site. Brackets page shows today's temperatures of the South
    American capitals. Click one: five day forecast. 60 seconds.
 2. **The brief, decomposed.** Three parts: weather proxy, locations and brackets, the product
-   model. One slide with the ten assumptions that fill the brief's gaps. 60 seconds.
+   model. One slide with the thirteen assumptions that fill the brief's gaps. 60 seconds.
 3. **Architecture.** Context and container diagrams. Data flow for one weather request (cache
    hit, miss, stale) and for one bookable query. 2 minutes.
 4. **Three decisions and their trade-offs.** Departure as the sellable unit; danger derived in

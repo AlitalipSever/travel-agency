@@ -18,6 +18,7 @@ erDiagram
     string country_code
     decimal latitude
     decimal longitude
+    string timezone "IANA name"
     bool active
   }
   Destination {
@@ -59,9 +60,15 @@ erDiagram
   }
 ```
 
-Weather readings are not an entity of the catalogue: current and forecast values live in Redis
-with a TTL. A `WeatherSnapshot` table (location, taken_at, temperature, condition) is an
-optional extra for history; see 07-roadmap.md.
+## Weather samples
+
+Weather is not part of the catalogue, but what the worker fetches for known locations is kept
+(ADR 0012): `WeatherSample(location_id, slot_time timestamptz, kind forecast|observation,
+fetched_at, temp, temp_min, temp_max, condition_code, condition_label, pop, raw jsonb)`,
+unique on (location_id, slot_time, kind), upserted on every fetch so the newest forecast wins
+and an observation supersedes the forecast of its hour. Pruned after 90 days. Ad hoc
+coordinates are served from Redis only. All timestamps are UTC; local days are computed with
+the location's IANA zone (ADR 0013).
 
 ## Derived values
 
@@ -77,7 +84,9 @@ optional extra for history; see 07-roadmap.md.
 - Departure: unique (package_id, starts_on); capacity > 0.
 - TourPackage: duration_days >= 1.
 - Booking: seats > 0; unique idempotency_key per customer.
-- Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180].
+- Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180];
+  timezone must be a valid IANA name.
+- WeatherSample: unique (location_id, slot_time, kind).
 - Destination danger in [0, 3].
 
 ## Indexes
@@ -85,6 +94,7 @@ optional extra for history; see 07-roadmap.md.
 - Departure (starts_on) for the date range filter.
 - Booking (departure_id, status) for the remaining seats aggregate.
 - Destination (location_id); the package to destination join table on both keys.
+- WeatherSample (location_id, slot_time) for the daily summary read.
 
 ## Seed data
 

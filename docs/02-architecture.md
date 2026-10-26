@@ -74,7 +74,8 @@ aggregation), `locations` (list, seed, brackets), `catalog` (destination, packag
 Documented as sequence diagrams once the code exists:
 
 - R1 Current weather request, cache hit and cache miss paths, stale fallback.
-- R2 Scheduled refresh of all locations, rate limit budget, partial failure.
+- R2 Scheduled refresh of all locations: fetch, upsert weather samples, write cache; rate
+  limit budget, partial failure.
 - R3 Bookable packages query (date range on the departure date, ADR 0011).
 - R4 Booking under concurrency (two clients, one seat left).
 
@@ -121,7 +122,7 @@ See docs/adr/README.md.
 | Id | Scenario | Response |
 |---|---|---|
 | Q1 | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints keep answering from cache, marked stale; refresh job backs off |
-| Q2 | 13 locations, refresh every 15 minutes | Stays far under 60 calls per minute; budget tracked |
+| Q2 | 13 locations, refresh every 15 minutes | Stays far under 60 calls per minute; budget tracked; samples table grows by about 400 rows a day and is pruned at 90 days |
 | Q3 | Two bookings for the last seat at the same moment | One succeeds, one gets 409; no overbooking |
 | Q4 | Deploy a new api version | Rolling update, no failed requests, migrations run first |
 | Q5 | Server lost | Terraform recreates, Helm reinstalls, PostgreSQL restored from last backup |
@@ -134,4 +135,6 @@ named in 07-roadmap.md with the step that removes it.
 ## 12. Glossary
 
 Departure: a package on one date with its capacity; it ends after the package's duration. Bookable: departure in range, in the
-future, seats remaining. Danger score: 0 none, 1 low, 2 medium, 3 high.
+future, seats remaining. Danger score: 0 none, 1 low, 2 medium, 3 high. Weather sample: one 3 hour forecast slot or one
+observation for a known location, stored in UTC. Local day: the calendar day in the location's
+IANA zone.

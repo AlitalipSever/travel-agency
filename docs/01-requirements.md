@@ -22,15 +22,16 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 - W1 Current weather for a latitude and longitude.
 - W2 Five day forecast for a latitude and longitude: one row per day with average temperature
   and a condition label (sunny, cloudy, rain, ...).
-- W3 The free tier forecast endpoint returns 3 hour slots (40 per 5 days). Daily average and a
-  daily condition are derived by us.
+- W3 The free tier forecast endpoint returns 3 hour slots (40 per 5 days, from the next full
+  slot after now). Daily average and a daily condition are derived by us. One Call 3.0 would
+  give daily values but needs a paid subscription; the brief says free tier only.
 - W4 The upstream API is rate limited (60 calls per minute on the free tier) and may be slow or
   down. The system must stay responsive and inside the limit.
 
 ### 2.2 Locations and temperature brackets
 
 - L1 A manageable list of locations (create, read, update, delete): name, country, latitude,
-  longitude.
+  longitude, IANA time zone (needed for local calendar days, A13).
 - L2 Seeded with the capitals of South America.
 - L3 An endpoint that returns the locations grouped by current temperature bracket.
 - L4 Brackets may be tuned so that each bracket has at least one location and the distribution
@@ -60,13 +61,16 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 | A1 | "For a given danger score": equal or at most | At most: the client asks "nothing more dangerous than medium". Exact match offered as a query flag | 0003 |
 | A2 | Capacity per package or per date | Per departure date. A sold out date does not block other dates | 0002 |
 | A3 | What "bookable" means | Departure date inside the range, in the future, and seats remaining | 0002 |
-| A4 | Temperature brackets fixed or dynamic | Configurable fixed edges, default tuned to the seed; a quantile mode as an option | 0004 |
+| A4 | Temperature brackets fixed or dynamic | Configurable fixed edges, default tuned to the seed; a quantile mode as an option. In fixed mode a bracket may be empty in some seasons; the response returns it empty rather than hiding it | 0004 |
 | A5 | Which capital for Bolivia | Sucre (constitutional); La Paz recorded as a second location | 03-data-model |
 | A6 | Danger score scale | Integer 0 to 3: none, low, medium, high | 0003 |
 | A7 | Currency of price | One currency per package, default EUR, stored as decimal plus ISO code | 03-data-model |
 | A8 | Who calls the API | Agency staff (write) and client applications (read); token auth, two roles | 04-api |
 | A9 | Framework | Django + DRF as the brief's stack implies, not FastAPI | 0001 |
 | A10 | "Between two dates": the departure inside the range, or the whole trip | The departure date inside the range (industry convention, the data the brief gives); packages get `duration_days` so each departure also reports `ends_on` | 0011 |
+| A11 | Does "next five days" include today, and how are cut days reported | Response has `today` and `days` (five, from tomorrow). Today is complete for known locations once samples exist (0012), partial for ad hoc coordinates; a day cut by the 120 hour window is marked `partial`; every day reports its sample counts | 0013 |
+| A12 | What the daily "condition" is | Daytime slots, most significant weather first (thunderstorm, rain, snow, fog, cloudy, clear), most frequent as tie break; upstream codes mapped to that closed set | 0013 |
+| A13 | Which day is "a day" | The location's local calendar day: timestamps stored in UTC, each location carries an IANA zone, summaries convert in code and state the zone | 0013 |
 
 ## 4. Out of scope, deliberately
 

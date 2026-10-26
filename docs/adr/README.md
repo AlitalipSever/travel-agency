@@ -16,3 +16,5 @@ supersedes an earlier one. Status: proposed, accepted, superseded, rejected.
 | [0009](0009-registry-and-ci.md) | Images in GitHub Container Registry, built by GitHub Actions for arm64 and amd64 | proposed |
 | [0010](0010-docs-arc42-c4.md) | Architecture documentation in arc42 structure with C4 diagrams in Mermaid | proposed |
 | [0011](0011-date-range-on-departure.md) | The date range filter applies to the departure date; packages carry a duration | proposed |
+| [0012](0012-persist-weather-samples.md) | Forecast slots and observations are persisted for known locations | proposed |
+| [0013](0013-daily-summary-and-time.md) | Daily summary rules (mean, min, max; daytime significant weather) and UTC storage with IANA local days | proposed |

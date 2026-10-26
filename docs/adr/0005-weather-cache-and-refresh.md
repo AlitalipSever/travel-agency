@@ -32,3 +32,5 @@ location's timezone.
 The API path never blocks on upstream for known locations. The operations status reports hit
 ratio, last refresh and budget used. Coordinates are rounded to 3 decimals for cache keys.
 A circuit breaker opens after repeated upstream failures and closes on a successful probe.
+The cache is not the only store: what the worker fetches for known locations is also persisted
+(ADR 0012), and daily summaries are computed by the rules of ADR 0013.
