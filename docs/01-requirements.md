@@ -106,14 +106,30 @@ quality scenarios in 02 §10.2.
 
 #### W4 Independence from the upstream
 
-- **Statement.** The system shall stay responsive and inside the upstream's usage limits regardless of the upstream's latency, availability or the number of locations.
-- **Rationale.** F2 and F3: the upstream is rate limited and outside our control; the brief asks for performance and stability.
+- **Statement.** The system shall stay responsive and inside the upstream's usage limits
+  whatever the upstream's latency or availability, and shall protect that budget from its own
+  callers.
+- **Rationale.** F2 and F3; the brief asks for performance and stability.
 - **Acceptance.**
   1. No request for a known location waits on the upstream.
-  2. Upstream calls per minute stay below the limit at the configured refresh rate and location count; the budget used is observable.
-  3. An upstream outage produces no 5xx from the weather endpoints while stored values exist, and is visible in the operations status.
-  4. Repeated upstream failures stop further calls for a cooling period and resume automatically.
-- **Satisfied by.** ADR 0005 (scheduled refresh, cache, circuit breaker), ADR 0012; 06-operations.
+  2. The scheduled refresh spreads its calls over the interval and keeps the total, together
+     with ad hoc calls, under 80 % of the per minute limit; when the location count would
+     exceed that, the interval lengthens rather than the limit being crossed. Monthly usage
+     stays under the monthly limit. Both counters are observable.
+  3. Ad hoc coordinate requests are rate limited per caller and draw from a reserved share of
+     the budget; exhausting that share answers 429 with Retry-After and does not slow the
+     scheduled refresh.
+  4. A failing upstream call for one location does not stop the refresh of the others; the
+     failed location keeps its last values.
+  5. During an upstream outage, known locations are served from stored data (no 5xx), ad hoc
+     requests follow W1 (4 and 5), and the outage is visible in the operations status.
+  6. After repeated failures the system stops calling the upstream for a cooling period and
+     resumes automatically; while open, ad hoc requests fail fast instead of waiting for
+     timeouts.
+  7. No request is held longer than the configured upstream timeout; the W1 latency targets
+     hold.
+- **Satisfied by.** ADR 0005 (refresh, budget, circuit breaker), ADR 0012; 04-api §Operations;
+  06-operations.
 
 ### 2.2 Locations and temperature brackets
 

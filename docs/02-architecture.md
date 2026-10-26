@@ -163,6 +163,8 @@ Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind
   bookings), `finance` (00-domain.md section 5). Admin for `ops`.
 - Audit: who changed what and when on catalogue and departures; soft delete.
 - Idempotency: booking requests carry an idempotency key.
+- Rate limiting: per token on ad hoc weather requests; the upstream budget is split between
+  the scheduled refresh and ad hoc calls (W4, ADR 0005).
 - Time: UTC in storage, IANA zone per location, local days computed in code (ADR 0013).
 - Observability: structured JSON logs, OpenTelemetry traces, `/healthz` and `/readyz`,
   Prometheus metrics when the monitoring stack is installed.

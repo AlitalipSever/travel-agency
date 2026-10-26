@@ -10,7 +10,9 @@ Status: draft, 2026-10-26. Base path `/api/v1`. OpenAPI schema at `/api/schema`,
 | GET | `/weather/current?lat=&lon=` | Current temperature, condition, humidity, wind, `observed_at`, `source: live, cached or stale` |
 | GET | `/weather/forecast?lat=&lon=` | `today` plus `days` (five, from tomorrow); per day local `date`, `temp_avg`, `temp_min`, `temp_max`, `condition`, `observed_samples`, `forecast_samples`, `partial`; response carries `timezone`, `as_of`, `source` (ADR 0013). For a known location `today` is complete once samples exist (ADR 0012) |
 
-Coordinates are validated; results are cached by rounded coordinates (3 decimals, about 100 m).
+Coordinates are validated; ad hoc results are cached by rounded coordinates (3 decimals, about
+100 m). Ad hoc requests are rate limited per token; over the limit or when the ad hoc upstream
+share is exhausted the response is 429 with `Retry-After` (W4).
 
 ## Locations
 
@@ -56,7 +58,7 @@ packages whose destinations' forecast average is above a threshold.
 |---|---|
 | `/healthz` | Process up |
 | `/readyz` | Database and Redis reachable |
-| `/api/v1/ops/status` | Cache hit ratio, last refresh time, upstream call budget, versions (read for the operations page) |
+| `/api/v1/ops/status` | Cache hit ratio, last refresh time and effective interval, upstream calls this minute and this month against their shares, circuit breaker state, versions (read for the operations page) |
 | `/metrics` | Prometheus |
 
 ## Auth

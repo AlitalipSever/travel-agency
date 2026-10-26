@@ -27,7 +27,15 @@ For known locations PostgreSQL is the single source: the worker writes samples, 
 them and computes summaries; no second copy in Redis. Ad hoc coordinates (W1, W2) are fetched
 on miss with a 10 minute TTL in Redis, timeouts and bounded retries; they are not persisted.
 Redis also serves as the Celery broker. A short lived cache of computed summaries is a later
-optimisation, added only if measurements ask for it. When upstream fails, the last value is returned with `source: stale` and its age; the
+optimisation, added only if measurements ask for it.
+
+Budget: the per minute limit is split into a reserved share for the scheduled refresh and a
+share for ad hoc requests, the sum capped at 80 % of the limit. The refresh spreads its calls
+evenly over the interval; if the location count needs more calls than its share allows, the
+interval lengthens automatically and the operations status shows the effective interval. Ad
+hoc requests are rate limited per caller token; when the ad hoc share is exhausted the API
+answers 429 with Retry-After. A failing call for one location does not abort the run. Minute
+and month counters are kept and exposed. When upstream fails, the last value is returned with `source: stale` and its age; the
 response is never a 5xx because of the upstream while a stored value exists. With no stored
 value (a coordinate asked for the first time during an outage) the API answers 503 with a
 problem detail and a Retry-After header: no made-up data, no empty 200. Daily aggregation of the 3 hour slots happens
@@ -38,5 +46,6 @@ location's timezone.
 
 The API path never blocks on upstream for known locations. The operations status reports hit
 ratio, last refresh and budget used. Coordinates are rounded to 3 decimals for cache keys.
-A circuit breaker opens after repeated upstream failures and closes on a successful probe.
+A circuit breaker opens after repeated upstream failures and closes on a successful probe;
+while open, ad hoc requests fail fast (503 or stale) instead of waiting for timeouts.
 Daily summaries are computed by the rules of ADR 0013 from the samples of ADR 0012.
