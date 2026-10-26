@@ -8,7 +8,7 @@ row per official subsection; the status column is updated with every change to
 |---|---|---|---|
 | 0 Summary (not an arc42 section; the brief's "concise overview") | One page: what, structure, flows, three decisions, stack | 02 §0 | done |
 | 1.1 Requirements overview | Short description of functional requirements, link to the source | 02 §1.1, 01-requirements | done |
-| 1.2 Quality goals | 3 to 5 goals, ISO 25010 characteristics, priority order | 02 §1.2 | done |
+| 1.2 Quality goals | 3 to 5 goals, ISO 25010 characteristics, priority order | 02 §1.2 (with a Measured by column feeding 10.1) | done |
 | 1.3 Stakeholders | Table: role or name, contact, expectations | 02 §1.3, 00-domain §2 | done |
 | 2 Constraints | Technical, organisational, conventions; table | 02 §2 | done |
 | 3.1 Business context | Context diagram + table of partners with inputs and outputs | 02 §3.1 | done |

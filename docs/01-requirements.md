@@ -457,6 +457,26 @@ quality scenarios in 02 §10.2.
      things to look at when something is wrong; the monthly cost is listed.
 - **Satisfied by.** ADR 0006, 0007, 0009; 06-operations; 04-api §Operations.
 
+#### N6 Security
+
+- **Statement.** The system shall admit only identified callers, give each role no more than
+  its job needs, keep partners' data apart, and protect its secrets and its upstream budget.
+- **Rationale.** Not a line of the brief, but a production system in a regulated industry is
+  judged on it; the pieces exist across the requirements and are gathered here (ISO 25010
+  security: confidentiality, integrity, accountability).
+- **Acceptance.**
+  1. Every API call carries a valid token; unauthenticated calls get 401, calls outside the
+     role's permissions 403 (matrix in 00-domain §5).
+  2. A `partner` token never reads, changes or cancels another partner's bookings; tested
+     with two partner tokens.
+  3. No secret is in the repository or in an image; secrets are injected at deploy time and
+     rotation is documented (N5.4).
+  4. Ad hoc weather requests are rate limited per caller (W4.3); request bodies and query
+     parameters are validated and errors never echo internals (problem details only).
+  5. Every write is attributed to a user and request in the history tables (ADR 0014).
+  6. Dependencies are pinned and scanned in CI; images run as a non-root user.
+- **Satisfied by.** 00-domain §5; 02 §8; ADR 0014; CI; `core/tests/test_auth.py`.
+
 ### 2.5 Facts about the environment (constraints, not requirements)
 
 - **F1** The free tier forecast endpoint returns 40 three hour slots from the next full slot

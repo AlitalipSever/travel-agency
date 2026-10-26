@@ -63,19 +63,31 @@ Everything below is the long form (arc42); decisions are in [adr/](adr/README.md
 
 A travel agency backend: weather for coordinates and for the agency's locations (grouped by
 temperature bracket), and the product catalogue (packages, destinations, dated departures with
-capacity) with a bookable-packages search by date range and danger score. Full list and
-assumptions: [01-requirements.md](01-requirements.md).
+capacity) with a bookable-packages search by date range and danger score, plus bookings that
+never oversell.
+
+Driving forces (00-domain): the agency owner wants to run the agency without developer help
+for everyday changes; sales wants to answer "these dates, nothing too risky" in one query and
+book without double selling; marketing wants weather it can sell with; partner agencies want a
+contract they can integrate against once.
+
+Requirements and their acceptance checks are in [01-requirements.md](01-requirements.md):
+W1 to W4 weather, L1 to L4 locations and brackets, P1 to P6 catalogue, departures and booking,
+N1 to N6 qualities, F1 to F5 facts about the environment, A1 to A16 assumptions that close
+the brief's gaps.
 
 ### 1.2 Quality goals
 
-Top goals in priority order, named after ISO 25010 characteristics:
+Top goals in priority order, named after ISO 25010 characteristics, each with what measures
+it (quality scenarios in §10.2, requirements in 01).
 
-| # | Goal | ISO 25010 | Meaning here |
-|---|---|---|---|
-| 1 | Reliability toward the upstream | reliability: fault tolerance, availability | Answers even when OpenWeatherMap is slow, down or rate limiting |
-| 2 | Correctness of the product model | functional suitability: correctness | Capacity, availability and danger are never ambiguous |
-| 3 | Operability | maintainability: modifiability; reliability: recoverability | One command locally, one pipeline to deploy, visible health, restorable |
-| 4 | Maintainability | maintainability: modularity, testability | Thin views, explicit services, tests at the seams, documented decisions |
+| # | Goal | ISO 25010 | Meaning here | Measured by |
+|---|---|---|---|---|
+| 1 | Reliability toward the upstream | reliability: fault tolerance, availability | Answers even when OpenWeatherMap is slow, down or rate limiting; its budget is never exceeded | Q1, Q2; W1.4, W1.5, W4 |
+| 2 | Correctness of the product model | functional suitability: correctness | Capacity, availability and danger are never ambiguous or stale | Q3; P3, P4, P5, P6 |
+| 3 | Operability: deploy, recover, observe | reliability: recoverability; maintainability: modifiability | One command locally, one pipeline to deploy, rollback in one command, restorable from backup, visible health and budget | Q4, Q5; N5 |
+| 4 | Security | security: confidentiality, integrity, accountability | Token per user with four roles, partners see only their own data, no secrets in git, callers rate limited, every change attributed | N6; W4.3; 00-domain §5 |
+| 5 | Maintainability | maintainability: modularity, testability, analysability | Thin views, services per app, tests at the seams, lint and types clean, documented decisions | Q6, Q7; N3.3 |
 
 ### 1.3 Stakeholders
 
@@ -84,6 +96,19 @@ short: the agency owner commissions and reads; operations, sales, finance and pa
 are the actors (roles `ops`, `sales`, `finance`, `partner`); travellers are data subjects, not
 users, in this iteration; regulators and suppliers are indirect; the operator and
 OpenWeatherMap sit inside the system boundary.
+
+The expectations that shaped the architecture most:
+
+- Operations: change the catalogue, dates and capacity without a developer. The Django admin
+  and the `ops` role (ADR 0001).
+- Sales: one query for "these dates, at most this danger", and no double selling. The bookable
+  search (P5) and the row lock on the departure (ADR 0002).
+- Partner agencies: a stable, documented contract and isolation from each other. OpenAPI
+  schema, versioned path, partner-scoped bookings (04-api, 00-domain §5).
+- Finance and regulators: who changed what, when, and what a record looked like. Trigger-based
+  history (ADR 0014).
+- Operator: reproducible from code, one command to deploy or roll back, health and budget
+  visible. Terraform, Helm, CI, the operations status (ADR 0006, 0009).
 
 ## 2. Constraints
 
