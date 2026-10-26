@@ -71,7 +71,8 @@ packages whose destinations' locations all have a five day average at or above t
 
 ## Auth
 
-Token in `Authorization: Token ...`, one role per user (00-domain.md section 5): `ops` writes
+Token in `Authorization: Token ...`, one role per user (00-domain.md section 5). CORS allows
+the case study site's origin; the site uses a `demo` partner token (A17): `ops` writes
 the catalogue and departures and uses the admin; `sales` searches, books and cancels; `partner`
 does the same for its own travellers and sees only its own bookings; `finance` reads
 everything. Every role reads weather, brackets and the catalogue.

@@ -27,7 +27,7 @@ web), with the order and the dependencies. Each package is one to three tickets'
 | B6 | Bookable query: date range, danger derivation, remaining seats, pagination, indexes | B5 | Endpoint and tests; EXPLAIN documented |
 | B7 | Booking: traveller, partner, booking, row lock, idempotency, cancel, concurrency test | B5 | Two parallel bookings, one 409 |
 | B8 | Extras: suitability by traveller risk appetite, weather aware filter, price and type filters | B4, B6, B7 | Documented and tested |
-| B9 | Cross cutting: token auth and groups, audit log, soft delete | B5 | Writes recorded; deleted rows hidden |
+| B9 | Cross cutting: token auth and roles, trigger-based history, soft delete, demo partner and nightly demo reset | B5 | Writes attributed; deleted rows hidden; demo bookings isolated and reset |
 
 ## Web (W)
 

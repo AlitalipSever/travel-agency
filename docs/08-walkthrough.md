@@ -7,7 +7,7 @@ same sections.
    American capitals. Click one: five day forecast. 60 seconds.
 2. **Who is this for, and what did I ask first.** The stakeholder map, the four roles, the
    traveller as a record not a user, and the questions I would put to the client with the
-   assumption I worked with (00-domain). Then the brief in three parts and the thirteen
+   assumption I worked with (00-domain). Then the brief in three parts and the seventeen
    assumptions. 90 seconds.
 3. **Architecture.** Context and container diagrams. Data flow for one weather request (cache
    hit, miss, stale) and for one bookable query. 2 minutes.

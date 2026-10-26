@@ -12,7 +12,7 @@ range and danger score, with bookings that never oversell. Operations manage the
 sales and partner agencies search and book, finance reads; travellers are served through them
 and never call the API (00-domain). It runs as a Django + DRF API with Celery workers,
 PostgreSQL and Redis, packaged as one Helm chart on Kubernetes, with a Next.js case study
-site in front. Requirements and the sixteen assumptions that close the brief's gaps are in
+site in front. Requirements and the seventeen assumptions that close the brief's gaps are in
 01-requirements.
 
 **Structure.** Four Django apps behind one API: `weather` (upstream adapter, samples, daily
@@ -135,35 +135,50 @@ topology were free, and the choices are argued in ADR 0005 to 0009 and 0014.
 
 ```mermaid
 C4Context
-  Person(ops, "Operations", "Manages locations, destinations, packages, departures")
-  Person(sales, "Sales / Finance", "Searches, books, cancels; reads bookings")
-  System_Ext(partner, "Partner agency system", "Searches and books for its travellers")
-  System(travel-agency, "Travel Agency", "Travel agency backend and case study site")
-  System_Ext(owm, "OpenWeatherMap", "Current weather and 5 day / 3 hour forecast")
-  Rel(ops, travel-agency, "HTTPS, token")
-  Rel(sales, travel-agency, "HTTPS, token")
-  Rel(partner, travel-agency, "HTTPS, token")
-  Rel(travel-agency, owm, "HTTPS, API key, rate limited")
+  Person(ops, "Operations", "Manages locations, destinations, packages, departures, bracket edges")
+  Person(sales, "Sales", "Searches, books, cancels")
+  Person(finance, "Finance", "Reads bookings and prices")
+  Person(visitor, "Case study visitor", "Reads the site, tries the live demo as the demo partner")
+  System_Ext(partner, "Partner agency system", "Searches and books for its own travellers")
+  System(travel-agency, "Travel Agency", "Backend API, admin and case study site")
+  System_Ext(owm, "OpenWeatherMap", "Current weather and 5 day / 3 hour forecast, free tier")
+  Rel(ops, travel-agency, "admin and API, ops token")
+  Rel(sales, travel-agency, "API, sales token")
+  Rel(finance, travel-agency, "API, finance token")
+  Rel(partner, travel-agency, "API, partner token")
+  Rel(visitor, travel-agency, "site; demo partner token")
+  Rel(travel-agency, owm, "API key, rate limited")
 ```
 
-| Partner | Inputs to the system | Outputs from the system |
+| Communication partner | Into the system | Out of the system |
 |---|---|---|
-| Operations | Locations, destinations, packages, departures, capacity, bracket edges | Admin views, sold-out state, refresh status |
-| Sales | Search criteria (dates, danger, traveller), bookings, cancellations | Bookable packages with departures and seats, booking confirmations |
-| Finance | Date ranges | Bookings with price and departure |
-| Partner agency system | Search criteria, bookings for its own travellers | Same as sales, scoped to its bookings |
-| OpenWeatherMap | Coordinates, API key | Current observation, 40 three hour forecast slots |
+| Operations | Locations, destinations, types, packages, departures, capacity, bracket edges, refresh trigger | Admin views, sold-out and remaining seats, refresh and budget status |
+| Sales | Search criteria (dates, danger or traveller, type, price, weather), bookings, cancellations | Bookable packages with matching departures, end dates and seats; booking confirmations and conflicts |
+| Finance | Date ranges | Bookings with price at booking, departure and status; history "as of" |
+| Marketing (no role of its own) | reads with an ops or finance token | Brackets, forecasts, the weather aware filter |
+| Partner agency system | Search criteria, bookings and cancellations for its own travellers | Same as sales, scoped to its own bookings |
+| Case study visitor | Site navigation; demo searches and bookings under the demo partner | The site, the API docs, demo results; demo data is isolated and reset nightly (A17) |
+| Traveller | nothing directly | nothing directly; served through sales or a partner (00-domain) |
+| OpenWeatherMap | Current observation, 40 three hour forecast slots | Coordinates and the API key |
+
+Formats: dates ISO 8601, money `numeric` + ISO 4217, countries ISO 3166-1 alpha-2, zones IANA
+names, coordinates decimal degrees (WGS 84), errors RFC 7807 problem details.
 
 ### 3.2 Technical context
 
-| Channel | Protocol | Carries |
-|---|---|---|
-| Public API | HTTPS, JSON, `Authorization: Token`, OpenAPI 3 | Every input and output of operations, sales, finance and partners |
-| Django admin | HTTPS, session | Operations' catalogue edits (same data as the API) |
-| Upstream weather | HTTPS, API key in query, JSON | Coordinates out; observations and forecast slots in |
-| Cluster internal | PostgreSQL wire protocol, Redis protocol (TLS off inside the node) | Persistence, cache, task queue |
-| Backups | S3 API over HTTPS | PostgreSQL base backups and WAL |
-| Delivery | HTTPS to ghcr.io and the Kubernetes API | Images and Helm releases |
+| Channel | Protocol | Business partners | Carries |
+|---|---|---|---|
+| Public API `/api/v1` | HTTPS, JSON, `Authorization: Token`, OpenAPI 3 at `/api/schema`, Swagger at `/api/docs` | operations, sales, finance, partners | Every business input and output above |
+| Browser to API | Same API from the case study site's pages, CORS restricted to the site's origin, demo partner token | case study visitor | Demo searches and bookings, operations status |
+| Django admin | HTTPS, session cookie | operations | Catalogue edits (same data as the API) |
+| Upstream weather | HTTPS, API key in query, JSON | OpenWeatherMap | Coordinates out; observations and forecast slots in |
+| Task queue | Redis protocol, Celery | internal | Refresh jobs (scheduled, on create, manual) |
+| Cluster internal | PostgreSQL wire protocol, Redis protocol; no TLS on a single node (revisit with a second node) | internal | Persistence, cache, queue |
+| Backups | S3 API over HTTPS | Hetzner Object Storage | PostgreSQL base backups and WAL |
+| Certificates | ACME HTTP-01 over HTTPS (cert-manager) | Let's Encrypt | Certificate issue and renewal |
+| DNS | A record, DNS only, no proxy | Cloudflare DNS | Name to server address |
+| Infrastructure | Hetzner Cloud API over HTTPS (Terraform) | Hetzner | Server, firewall, volume, network |
+| Delivery | HTTPS to ghcr.io; Kubernetes API over HTTPS with a deploy kubeconfig | GitHub Actions | Images and Helm releases |
 
 ## 4. Solution strategy
 

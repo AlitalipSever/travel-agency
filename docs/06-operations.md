@@ -35,6 +35,12 @@ CloudNativePG schedules a nightly base backup plus WAL archiving to Hetzner Obje
 retention 14 days. Restore drill: `make restore-drill` creates a second cluster from the
 latest backup and runs a row count comparison. Done once before go-live, result noted here.
 
+## Demo data
+
+The case study site books as the `demo` partner. A nightly job (Celery beat) cancels and
+removes demo bookings older than the day and restores the demo departures' seats, so the live
+demo always has something to book. `make demo-reset` runs it by hand.
+
 ## Health
 
 - `/healthz` process, `/readyz` dependencies. Kubernetes probes use both.

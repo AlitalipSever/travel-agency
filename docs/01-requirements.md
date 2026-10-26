@@ -475,6 +475,8 @@ quality scenarios in 02 §10.2.
      parameters are validated and errors never echo internals (problem details only).
   5. Every write is attributed to a user and request in the history tables (ADR 0014).
   6. Dependencies are pinned and scanned in CI; images run as a non-root user.
+  7. The demo partner token embedded in the site can only act as that partner (A17); its
+     bookings are reset nightly and it cannot read other partners' data.
 - **Satisfied by.** 00-domain §5; 02 §8; ADR 0014; CI; `core/tests/test_auth.py`.
 
 ### 2.5 Facts about the environment (constraints, not requirements)
@@ -512,6 +514,7 @@ quality scenarios in 02 §10.2.
 | A14 | Units | Metric: degrees Celsius, m/s, hPa; other unit systems in the roadmap | 04-api |
 | A15 | What the price is | Per traveller, the same for every departure of the package; a booking keeps the price at booking time; per-departure pricing in the roadmap | 03-data-model |
 | A16 | Which "today" decides whether a departure is still bookable | The agency's time zone, a setting operations can change; a departure starting today is still bookable (cut-off in the roadmap) | P5; 02 §8 |
+| A17 | How the live demo on the case study site is authenticated | The site embeds the token of a `demo` partner (role `partner`); demo bookings are isolated by partner scope, visible as demo data and reset nightly; no unauthenticated write exists | 00-domain §5; 02 §3 |
 
 ## 4. Out of scope, deliberately
 

@@ -40,6 +40,7 @@ flowchart TB
 | Traveller | through the agency or a partner, never the API | A tour that fits dates and risk appetite; a confirmed seat; personal data handled lawfully | no (data subject; self-service in the roadmap) |
 | Regulators | none, indirect | EU package travel rules (price transparency, cancellation rights), GDPR for traveller data | no |
 | Local suppliers | none in this iteration | Capacity per departure reflects what they can deliver | no |
+| Case study visitor (reviewer) | the public site | Read the documents, try the live demo without setup, see real data | yes: the site's embedded `demo` partner token |
 | Developer / operator | repo, cluster | One command locally, one pipeline to deploy, visible health, documented decisions | yes: operates |
 | OpenWeatherMap | HTTPS, API key | Stay inside the free tier's limits | external system |
 
@@ -92,7 +93,9 @@ proposed only where a job above asks for them.
 | Django admin | yes | no | no | no |
 
 Tokens identify a user; a user belongs to one role. A partner token is scoped to that
-partner's bookings. The traveller has no token in this iteration (see 07-roadmap.md,
+partner's bookings. The case study site embeds the token of a `demo` partner: visitors search
+and book as that partner only, their bookings are visible as demo data, and a nightly job
+resets them (A17). The traveller has no token in this iteration (see 07-roadmap.md,
 self-service).
 
 ## 6. Domain events
