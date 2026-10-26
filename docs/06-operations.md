@@ -51,6 +51,12 @@ latest backup and runs a row count comparison. Done once before go-live, result 
 | Certificate warning | `kubectl describe certificate -n travel-agency` | cert-manager challenge failed, DNS not pointing |
 | Pod CrashLoopBackOff after deploy | migrate job logs | Migration failed; rollback |
 
+## Time zone data
+
+The application container pins and updates the `tzdata` package (and Python's `tzdata`
+wheel) on every image build, because daylight saving rules change (F4); a stale database
+mis-assigns slots to days.
+
 ## Costs
 
 One ARM server, one volume, object storage, a domain. Listed with amounts once live.

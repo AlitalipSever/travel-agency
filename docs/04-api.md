@@ -46,9 +46,10 @@ departure, package name, id; page size 20 by default.
 Returns packages that have at least one departure with `starts_on` in `[from, to]` (inclusive;
 the range applies to the departure date, ADR 0011), in the future, with remaining seats > 0, and whose derived danger is <= `danger` (`danger_mode=exact`
 switches to equality). Each item carries the package data (including `duration_days`), its danger, and the matching
-departures with `starts_on`, `ends_on` and remaining seats. Paginated. Optional extras: `traveller={id}` applies the
-traveller's risk appetite instead of `danger`; `type`, `price_max`; `weather=warm` keeps
-packages whose destinations' forecast average is above a threshold.
+departures with `starts_on`, `ends_on` and remaining seats. Paginated. Optional extras (N4): `traveller={id}` applies the
+traveller's risk appetite as the "at most" danger (400 when the traveller has none); `type`, `price_max`; `min_forecast_avg=<°C>` keeps
+packages whose destinations' locations all have a five day average at or above the value
+(conditions now, not on the departure date; the response says so); `type`, `max_price`.
 
 ## Bookings
 

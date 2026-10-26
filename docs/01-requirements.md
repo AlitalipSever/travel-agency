@@ -411,28 +411,66 @@ quality scenarios in 02 §10.2.
 
 #### N4 Extra features
 
-- **Statement.** Extra features and filters that add value for the client shall be proposed and, where the effort is small, implemented.
-- **Rationale.** The brief's third deliverable.
+- **Statement.** Extra features and filters that add value for the client shall be proposed
+  and, where the effort is small, implemented; each one shall come from a job of a named actor.
+- **Rationale.** The brief's third deliverable; 00-domain §3 lists the jobs so that extras are
+  answers to needs, not decoration.
 - **Acceptance.**
-  1. Every proposed extra is tied to a job of an actor in 00-domain §3.
-  2. Implemented extras are tested and documented like the required features; proposed ones state what they would take.
-- **Satisfied by.** 04-api (extras); 07-roadmap.
+  1. Implemented: booking with capacity, concurrency safety and idempotency (P6; job of sales
+     and partners).
+  2. Implemented: suitability by traveller. The bookable search accepts `traveller={id}` and
+     uses that traveller's risk appetite as the "at most" danger; a traveller without a
+     recorded appetite is a 400 problem detail naming the field (job of sales: "nothing too
+     risky for this traveller").
+  3. Implemented: weather aware filter. `min_forecast_avg=<°C>` keeps packages whose
+     destinations' locations all have a five day average temperature at or above the value.
+     It describes conditions now, not on the departure date, and the response says so (job of
+     marketing: "destinations above 25 °C this week").
+  4. Implemented: `type=` and `max_price=` filters on the bookable search and the package list
+     (job of sales).
+  5. Every extra only narrows the required result (P5.6); with no extra parameter the required
+     behaviour is unchanged.
+  6. Proposed only, each with what it would take, in 07-roadmap: holds and waiting lists,
+     cancellation fees, notifications on danger change and departure cancellation, traveller
+     self-service, per-departure pricing, booking cut-off, weather history comparison.
+  7. Implemented extras are tested and documented like the required features.
+- **Satisfied by.** 04-api §Bookable search, §Bookings; 07-roadmap; 00-domain §3.
 
 #### N5 Production ready (our reading of the brief's goal line)
 
-- **Statement.** The system shall run for real, with deployment, rollback, backups, health checks and secret handling in place.
-- **Rationale.** The brief's goal line says production ready; we read it as running in production, and mark that as our reading.
+- **Statement.** The system shall run for real: reachable on the public internet, deployable
+  and recoverable from code, with its secrets, health and backups handled.
+- **Rationale.** The brief's goal line says "production-ready application"; we read it as
+  running in production and mark that as our reading, not the brief's demand.
 - **Acceptance.**
-  1. A public URL serves the API and the site over HTTPS.
-  2. Deploy and rollback are single commands; a restore drill has been run; secrets are not in git.
-- **Satisfied by.** ADR 0006, 0007, 0009; 06-operations.
+  1. A public URL serves the API, its documentation and the case study site over HTTPS with a
+     valid certificate.
+  2. The infrastructure is created from code (Terraform) and the application deployed by one
+     command or by CI on every push to main; rollback is one command.
+  3. Database backups run nightly to object storage and a restore drill has been performed and
+     recorded in 06-operations with its duration.
+  4. No secret is in git; secrets are injected at deploy time and can be rotated by replacing
+     them and restarting.
+  5. Liveness and readiness probes gate traffic; an operations status endpoint and page show
+     cache, refresh, budget and breaker state.
+  6. A runbook (06-operations) covers deploy, rollback, backups, secrets, health and the first
+     things to look at when something is wrong; the monthly cost is listed.
+- **Satisfied by.** ADR 0006, 0007, 0009; 06-operations; 04-api §Operations.
 
 ### 2.5 Facts about the environment (constraints, not requirements)
 
-- **F1** The free tier forecast endpoint returns 40 three hour slots from the next full slot after now, plus one current observation. No daily endpoint, no history, nothing beyond 120 hours. One Call 3.0 offers daily values but needs a paid subscription; the brief says free tier only.
+- **F1** The free tier forecast endpoint returns 40 three hour slots from the next full slot
+  after now, plus one current observation. No daily endpoint, no history, nothing beyond 120
+  hours. One Call 3.0 offers daily values but needs a paid subscription; the brief says free
+  tier only.
 - **F2** The free tier allows 60 calls per minute and about one million per month.
 - **F3** The upstream is outside our control: it may be slow, down or rate limiting.
-- **F4** Slot timestamps are UTC; the forecast response carries the location's offset. Chile and Paraguay observe daylight saving time; most other South American countries do not.
+- **F4** Slot timestamps are UTC; the forecast response carries the location's current offset.
+  Daylight saving rules change: Chile observes it, Brazil abolished it in 2019 and Paraguay
+  moved to permanent summer time in 2024. The IANA database carries these changes, which is
+  why zone names, not offsets, are stored, and why the runtime's tz data must be kept current.
+- **F5** Our own API is an upstream for the agency's front end and for partner systems whose
+  traffic we do not control; the upstream budget must be protected from them (W4.3).
 
 ## 3. Assumptions (gaps in the brief, how we fill them)
 
