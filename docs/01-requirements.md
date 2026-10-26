@@ -156,12 +156,18 @@ quality scenarios in 02 §10.2.
 
 #### L2 Initial data
 
-- **Statement.** A fresh installation shall contain the capitals of South America as locations.
+- **Statement.** A fresh installation shall contain the capitals of South America as active
+  locations.
 - **Rationale.** The brief: the list is initially filled with the capitals of South America.
 - **Acceptance.**
-  1. After migrations and seed, the capitals are listed with coordinates and IANA time zones.
-  2. The Bolivia choice (Sucre, with La Paz as a second location) and the French Guiana choice are documented (A5).
-  3. Running the seed twice changes nothing.
+  1. A fresh installation lists the twelve capitals of the sovereign states of South America
+     plus La Paz as Bolivia's seat of government, each with coordinates, ISO 3166-1 alpha-2
+     country code and IANA time zone. Cayenne is not included: French Guiana is a region of
+     France, not a country (A5).
+  2. The seed file states the source of its coordinates.
+  3. Seeding is idempotent and never overwrites a row that operations have edited.
+  4. Demo data for the catalogue (destinations, packages, departures) is a separate, optional
+     step and is not part of this requirement.
 - **Satisfied by.** 03-data-model §Seed data; A5.
 
 #### L3 Grouping by temperature
@@ -297,7 +303,7 @@ quality scenarios in 02 §10.2.
 | A2 | Capacity per package or per date | Per departure date. A sold out date does not block other dates | 0002 |
 | A3 | What "bookable" means | Departure date inside the range, in the future, and seats remaining | 0002 |
 | A4 | Temperature brackets fixed or dynamic | Configurable fixed edges, default tuned to the seed; a quantile mode as an option. In fixed mode a bracket may be empty in some seasons; the response returns it empty rather than hiding it | 0004 |
-| A5 | Which capital for Bolivia | Sucre (constitutional); La Paz recorded as a second location | 03-data-model |
+| A5 | Which cities count as capitals | The twelve sovereign states' capitals; Bolivia gives Sucre (constitutional) and La Paz (seat of government); Cayenne excluded, French Guiana is not a country | 03-data-model |
 | A6 | Danger score scale | Integer 0 to 3: none, low, medium, high | 0003 |
 | A7 | Currency of price | One currency per package, default EUR, stored as decimal plus ISO code | 03-data-model |
 | A8 | Who calls the API | Operations, sales and finance of the agency, and partner agencies' systems; travellers never call the API directly in this iteration. Token auth, roles `ops`, `sales`, `partner`, `finance` | 00-domain §5 |

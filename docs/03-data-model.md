@@ -107,10 +107,13 @@ the location's IANA zone (ADR 0013).
 
 ## Seed data
 
-Capitals of South America: Buenos Aires, Sucre (and La Paz as seat of government), Brasília,
-Santiago, Bogotá, Quito, Georgetown, Asunción, Lima, Paramaribo, Montevideo, Caracas, plus
-Cayenne for French Guiana. A handful of destinations and three packages with departures across
-the next ninety days, so that the bookable query has something to return on first run.
+Locations (L2): Buenos Aires, Sucre and La Paz, Brasília, Santiago, Bogotá, Quito, Georgetown,
+Asunción, Lima, Paramaribo, Montevideo, Caracas; thirteen rows with ISO country code, IANA
+zone and coordinates whose source the seed file cites. Cayenne is excluded (A5). The seed is
+idempotent and never overwrites edited rows.
+
+Demo data (optional, separate command): a handful of destinations and three packages with
+departures across the next ninety days, so that the bookable query has something to return.
 
 ## Audit and soft delete
 
