@@ -17,10 +17,27 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 
 ## 2. Requirements
 
-Form: each requirement states what the system shall do (solution free), why, how it is checked,
-and what satisfies it. Facts about the environment that shape the requirements are listed
-separately in 2.5; they are constraints, not requirements. Identifiers are used by work
-packages, ADRs ("Addresses") and tests.
+### How requirements are written here
+
+The form follows the spirit of ISO/IEC/IEEE 29148 (requirements engineering), not its full
+process. Each requirement is written to have these properties:
+
+| Property | Meaning | How this document does it |
+|---|---|---|
+| Necessary | Traceable to the brief or to a fact about the environment | Rationale names the brief, an assumption (A) or a fact (F) |
+| Solution free | Says what and why, never how | No framework, cache, queue or timing value inside a requirement; those live in ADRs and design documents |
+| Unambiguous | One reading | Gaps in the brief are closed by a numbered assumption in section 3, not by silence |
+| Verifiable | A check exists that passes or fails | Acceptance names the observable behaviour or the measurement |
+| Traceable | Linked both ways to design and tests | Identifier (W, L, P, N) and a Satisfied by line; every ADR carries an Addresses line back |
+| Singular | One requirement per item | Compound needs are split (for example W3 and W4) |
+
+Template of one item:
+
+> **Id Short name.** The system shall ... Rationale: ... Acceptance: ... Satisfied by: ...
+
+Facts about the environment that shape the requirements are listed separately in 2.5; they
+are constraints, not requirements. Non functional expectations (2.4) are measured by the
+quality scenarios in 02b §10.2.
 
 ### 2.1 Weather
 
