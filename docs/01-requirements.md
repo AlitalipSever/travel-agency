@@ -74,7 +74,7 @@ suggested extra features, and a presentation of reasoning and trade-offs.
 
 ## 4. Out of scope, deliberately
 
-Payments, user registration and password flows, multi tenancy, a customer facing booking
+Payments, user registration and password flows, multi tenancy, a traveller facing booking
 front end, internationalisation. Each is named in 07-roadmap.md with what it would take.
 
 ## 5. Questions I would ask the client first

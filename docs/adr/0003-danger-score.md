@@ -28,4 +28,4 @@ synchronisation for no measured gain.
 Adding a destination to a package can change the package's score immediately and
 consistently. If the catalogue grows to a size where the aggregate costs, a stored, trigger
 maintained column is the next step and would be a new ADR. The same scale is reused for the
-customer risk appetite in the suitability extra.
+traveller risk appetite in the suitability extra.

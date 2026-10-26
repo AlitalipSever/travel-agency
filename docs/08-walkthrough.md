@@ -17,7 +17,7 @@ same sections.
 5. **Production.** Terraform, Helm, CI/CD, operator managed PostgreSQL with backups, HTTPS,
    probes and resources. The operations page with live numbers. Why k3s on Hetzner and how the
    same chart goes to AKS. 2 minutes.
-6. **Extras.** Booking with a row lock and idempotency; suitability by customer risk appetite;
+6. **Extras.** Booking with a row lock and idempotency; suitability by traveller risk appetite;
    weather aware filter. Demo one booking that sells out. 90 seconds.
 7. **What I left out and what comes next.** The roadmap page. 30 seconds.
 8. Questions.
