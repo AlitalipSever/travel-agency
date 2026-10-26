@@ -15,62 +15,103 @@ architecture overview aligned with a Python, Django, PostgreSQL, Redis and cloud
 application itself (fetch and process, clean model, performance, stability, maintainability),
 suggested extra features, and a presentation of reasoning and trade-offs.
 
-## 2. Decomposition
+## 2. Requirements
+
+Form: each requirement states what the system shall do (solution free), why, how it is checked,
+and what satisfies it. Facts about the environment that shape the requirements are listed
+separately in 2.5; they are constraints, not requirements. Identifiers are used by work
+packages, ADRs ("Addresses") and tests.
 
 ### 2.1 Weather
 
-- **W1 Current weather for a coordinate.** Input: latitude and longitude, validated. Output:
-  temperature, condition label, humidity, wind, `observed_at`, and `source` (live, cache or
-  stale). Served from Redis when a value for the rounded coordinate (3 decimals) is younger
-  than 10 minutes; otherwise fetched with a timeout and bounded retries; when the upstream
-  fails, the last value is returned marked stale, never a 5xx (ADR 0005).
-- **W2 Five day forecast for a coordinate.** Output: `today` plus `days` (five, from tomorrow).
-  Per day: local `date`, `temp_avg` (the brief's number), `temp_min`, `temp_max`, `condition`,
-  `observed_samples`, `forecast_samples`, `partial`. The response carries `timezone`, `as_of`
-  and `source`. For a known location `today` is complete once samples exist; for an ad hoc
-  coordinate it is partial and says so; a day cut by the 120 hour window is marked `partial`
-  (ADR 0013, A11).
-- **W3 The upstream gives slots, not days.** The free tier returns 40 three hour slots from the
-  next full slot after now and one current observation; no daily endpoint, no history, nothing
-  beyond 120 hours. One Call 3.0 has daily values but needs a paid subscription, so it is out.
-  Therefore: temperature per day is mean, min and max over the slots of the local calendar day;
-  the condition comes from the daytime slots with significant weather first (thunderstorm,
-  rain, snow, fog), else the most frequent of cloudy and clear; upstream codes map to that
-  closed label set (ADR 0013, A12). Days are the location's local days: UTC in storage, IANA
-  zone per location, conversion in code (A13). For known locations the worker persists every
-  fetched slot and observation, so today's past hours are available (ADR 0012).
-- **W4 The upstream is rate limited and unreliable.** 60 calls per minute on the free tier;
-  it may be slow or down. Known locations are never fetched on the request path: a Celery beat
-  schedule refreshes them every 15 minutes inside a call budget, the API reads the cache and
-  the samples table. Ad hoc coordinates are fetched on cache miss with timeouts and retries. A
-  circuit breaker opens after repeated failures. The operations status reports hit ratio, last
-  refresh and budget used (ADR 0005).
+- **W1 Current weather.** For a latitude and longitude, the system shall return the current
+  temperature and condition, with when it was observed and whether the value is live or
+  stored. Rationale: the brief. Acceptance: valid coordinates answer within one second from a
+  warm system; invalid coordinates are rejected with a problem detail; during an upstream
+  outage the last known value is returned and marked as such. Satisfied by: ADR 0005; 04-api.
+- **W2 Daily forecast.** For a latitude and longitude, the system shall return a forecast for
+  the next five days, each day with an average temperature and a condition label. Rationale:
+  the brief. Acceptance: five days returned; each day's values are computed from all slots of
+  that local calendar day; a day with incomplete data is marked; the day boundary follows the
+  location's time zone. Satisfied by: ADR 0012, 0013; A11, A12, A13; 04-api.
+- **W3 Derived daily values.** The system shall derive daily values itself from the data the
+  upstream provides (2.5, F1). Rationale: the free tier has no daily endpoint. Acceptance: a
+  table test fixes the derivation rules (mean, min, max; condition selection) and their edge
+  cases (no daytime slot, daylight saving day). Satisfied by: ADR 0013.
+- **W4 Independence from the upstream.** The system shall stay responsive and inside the
+  upstream's limits regardless of the upstream's latency, availability or the number of
+  locations. Rationale: F2, F3. Acceptance: no request waits on the upstream for a known
+  location; upstream calls per minute stay below the limit at the configured refresh rate; an
+  upstream outage produces no 5xx from the weather endpoints. Satisfied by: ADR 0005, 0012.
 
 ### 2.2 Locations and temperature brackets
 
-- L1 A manageable list of locations (create, read, update, delete): name, country, latitude,
-  longitude, IANA time zone (needed for local calendar days, A13).
-- L2 Seeded with the capitals of South America.
-- L3 An endpoint that returns the locations grouped by current temperature bracket.
-- L4 Brackets may be tuned so that each bracket has at least one location and the distribution
-  is reasonable.
+- **L1 Manageable location list.** Operations shall create, read, update and delete locations
+  (name, country, coordinates, time zone) without developer help. Rationale: the brief
+  ("manageable"). Acceptance: the four operations through the API and the admin; a deleted
+  location disappears from listings but keeps its history. Satisfied by: ADR 0001; 04-api.
+- **L2 Initial data.** The list shall start with the capitals of South America. Rationale: the
+  brief. Acceptance: a fresh installation lists them with coordinates and time zones; the
+  Bolivia choice is documented (A5). Satisfied by: 03-data-model (seed).
+- **L3 Grouping by temperature.** The system shall return the locations grouped by their
+  current temperature bracket, stating the bracket edges used and when the temperatures were
+  read. Rationale: the brief. Acceptance: every active location appears in exactly one
+  bracket; the response never triggers upstream calls. Satisfied by: ADR 0004, 0005; 04-api.
+- **L4 Bracket tuning.** Bracket edges shall be adjustable so that the distribution is
+  reasonable and, when wanted, no bracket is empty. Rationale: the brief. Acceptance: edges are
+  configurable by operations; a mode exists that guarantees non empty brackets; in fixed mode
+  an empty bracket is returned empty, not hidden. Satisfied by: ADR 0004; A4.
 
 ### 2.3 Tour packages
 
-- P1 TourPackage: name, price, description, a set of destinations.
-- P2 Destination: linked to one location; has a type; has a danger score.
-- P3 A package is available on several dates and has limited capacity.
-- P4 Package danger score = max danger score of its destinations (derived).
-- P5 Endpoint: bookable packages between two dates for a given danger score, with their data.
-  The brief gives no tour duration; see A10.
+- **P1 Package.** The system shall store packages with name, price, description, duration and
+  a set of destinations. Rationale: the brief (duration added, A10). Acceptance: CRUD by
+  operations; price is a decimal with a currency code. Satisfied by: 03-data-model; A7.
+- **P2 Destination.** The system shall store destinations, each linked to one location, with a
+  type and a danger score. Rationale: the brief. Acceptance: danger is on a fixed scale (A6);
+  a destination may belong to several packages. Satisfied by: ADR 0003; 03-data-model.
+- **P3 Dated availability with capacity.** A package shall be offered on several dates, each
+  with its own capacity, and the system shall never sell more seats than a date has.
+  Rationale: the brief; A2, A3. Acceptance: two concurrent bookings of the last seat yield one
+  success and one conflict; remaining seats are visible per date. Satisfied by: ADR 0002.
+- **P4 Package danger.** A package's danger score shall equal the highest danger of its
+  destinations, at all times. Rationale: the brief. Acceptance: changing a destination's
+  danger changes every package that contains it on the next read. Satisfied by: ADR 0003.
+- **P5 Bookable packages search.** Given two dates and a danger score, the system shall return
+  the bookable packages with their data. Rationale: the brief. Acceptance: a package is
+  returned when at least one of its departures starts inside the range, lies in the future
+  and has seats left, and its danger does not exceed the given score (exact match available
+  on request); results carry the matching departures with start, end and remaining seats.
+  Satisfied by: ADR 0002, 0003, 0011; A1, A3, A10; 04-api.
 
 ### 2.4 Non functional
 
-- N1 Architecture overview aligned with Python, Django, PostgreSQL, Redis, cloud.
-- N2 Clean, professional data model.
-- N3 Performance, stability, maintainability.
-- N4 Extra features that add value for the client, suggested and where possible implemented.
-- N5 Production ready: runs for real, with the operational basics in place.
+- **N1 Architecture overview.** A concise overview aligned with a Python, Django, PostgreSQL,
+  Redis and cloud stack: data flow, structure, main choices. Satisfied by: 02-architecture,
+  adr/.
+- **N2 Clean data model.** Entities, relations and constraints that a reviewer can read in
+  one sitting; derived values not duplicated without reason. Satisfied by: 03-data-model;
+  ADR 0002, 0003.
+- **N3 Performance, stability, maintainability.** Measured by the quality scenarios in
+  02b §10.2 (latency unchanged during upstream outage, zero overbookings, zero failed requests
+  during a deploy, restore under 30 minutes) and by the structure rules in AGENTS.md.
+- **N4 Extra features.** Suggestions that add value for the client, implemented where the
+  effort is small; each one tied to a job in 00-domain §3. Satisfied by: 04-api (extras),
+  07-roadmap.
+- **N5 Production ready (our reading of the brief's goal line).** The system runs for real,
+  with deploy, rollback, backups, health and secrets handled. Satisfied by: ADR 0006, 0007,
+  0009; 06-operations.
+
+### 2.5 Facts about the environment (constraints, not requirements)
+
+- **F1** The free tier forecast endpoint returns 40 three hour slots from the next full slot
+  after now, plus one current observation. No daily endpoint, no history, nothing beyond 120
+  hours. One Call 3.0 offers daily values but needs a paid subscription; the brief says free
+  tier only.
+- **F2** The free tier allows 60 calls per minute and about one million per month.
+- **F3** The upstream is outside our control: it may be slow, down or rate limiting.
+- **F4** Slot timestamps are UTC; the forecast response carries the location's offset. Chile
+  and Paraguay observe daylight saving time; most other South American countries do not.
 
 ## 3. Assumptions (gaps in the brief, how we fill them)
 

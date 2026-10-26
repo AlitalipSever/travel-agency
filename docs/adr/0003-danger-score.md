@@ -2,6 +2,7 @@
 
 Status: proposed
 Date: 2026-10-26
+Addresses: P2, P4, P5; A1, A6
 
 ## Context
 

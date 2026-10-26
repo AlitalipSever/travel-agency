@@ -2,6 +2,7 @@
 
 Status: proposed | accepted | superseded by NNNN | rejected
 Date: YYYY-MM-DD
+Addresses: requirement and assumption ids from 01-requirements.md
 
 ## Context
 
