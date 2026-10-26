@@ -31,7 +31,7 @@ share is exhausted the response is 429 with `Retry-After` (W4).
 | GET, POST | `/destinations` | List with filters `type`, `danger_max`, `location` |
 | GET, PATCH, DELETE | `/destinations/{id}` | |
 | GET, POST | `/packages` | List with `danger_max`, `type`, `price_max`, `q` |
-| GET, PATCH, DELETE | `/packages/{id}` | Includes destinations and computed `danger` |
+| GET, PATCH, DELETE | `/packages/{id}` | Includes ordered destinations, computed `danger` (null for a draft) and `danger_label` |
 | GET, POST | `/packages/{id}/departures` | Dates with `ends_on`, capacity and remaining seats |
 
 ## Bookable search (the required endpoint)

@@ -61,6 +61,7 @@ erDiagram
     int seats
     decimal price_at_booking "per traveller, copied from the package"
     string currency
+    int danger_at_booking "package danger when booked"
     string idempotency_key
     enum status "confirmed, cancelled"
     enum cancelled_by "traveller_request, agency, departure_cancelled; null while confirmed"
@@ -90,8 +91,8 @@ the location's IANA zone (ADR 0013).
 ## Derived values
 
 - Departure end date = starts_on + duration_days - 1; reported as `ends_on`, not stored (ADR 0011).
-- Package danger = max(danger) over its destinations. Computed in the query with an
-  annotation; not stored (ADR 0003).
+- Package danger = max(danger) over its destinations, inactive ones included. Computed in the
+  query with an annotation; not stored (ADR 0003); null when the package has no destinations.
 - Remaining seats = capacity minus sum(seats) of confirmed bookings. Computed in the query;
   the booking write takes a row lock on the departure (ADR 0002).
 - Package suitability for a traveller = package danger <= traveller risk appetite (extra feature).

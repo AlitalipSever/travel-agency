@@ -278,12 +278,21 @@ quality scenarios in 02 §10.2.
 
 #### P4 Package danger
 
-- **Statement.** A package's danger score shall equal the highest danger score among its destinations at all times.
-- **Rationale.** The brief: the danger score of a package is the greatest one of its destinations.
+- **Statement.** A package's danger score shall equal the highest danger score among its
+  destinations at all times, inactive destinations included.
+- **Rationale.** The brief: the danger score of a package is the greatest one of its
+  destinations.
 - **Acceptance.**
-  1. Changing a destination's danger changes every package containing it on the next read; no stale value is served.
-  2. A package's danger is part of its API representation.
-- **Satisfied by.** ADR 0003 (derived in the query).
+  1. Changing a destination's danger changes every package containing it on the next read; no
+     stale value is served.
+  2. A package with no destinations has no danger score (null), is a draft (P1.5) and never
+     appears in the bookable search.
+  3. The package representation carries the score and its label (none, low, medium, high).
+  4. Deriving the score does not break the latency target of the bookable search (P5); the
+     query plan is documented.
+  5. A booking records the package's danger at booking time, so later changes are visible as
+     a difference.
+- **Satisfied by.** ADR 0003 (derived in the query); 03-data-model; 04-api §Catalogue.
 
 #### P5 Bookable packages search
 
