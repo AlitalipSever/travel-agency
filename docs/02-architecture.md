@@ -234,7 +234,8 @@ Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind
 - Errors: RFC 7807 problem details on every non 2xx response.
 - Auth: token per user, one role per user: `ops`, `sales`, `partner` (scoped to its own
   bookings), `finance` (00-domain.md section 5). Admin for `ops`.
-- Audit: who changed what and when on catalogue and departures; soft delete.
+- History: per-table history tables filled by database triggers with the acting user and
+  request, "as of" reads (ADR 0014); soft delete on catalogue tables.
 - Idempotency: booking requests carry an idempotency key.
 - Rate limiting: per token on ad hoc weather requests; the upstream budget is split between
   the scheduled refresh and ad hoc calls (W4, ADR 0005).

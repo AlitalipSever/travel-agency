@@ -134,7 +134,23 @@ idempotent and never overwrites edited rows.
 Demo data (optional, separate command): a handful of destinations and three packages with
 departures across the next ninety days, so that the bookable query has something to return.
 
-## Audit and soft delete
+## History and soft delete
 
-Catalogue tables and Departure carry `created_at`, `updated_at`, `deleted_at` and an audit
-row per change (actor, table, row, diff). Bookings are never deleted; they are cancelled.
+Catalogue tables, Departure, Location and the settings rows carry `created_at`, `updated_at`
+and, where soft delete applies, `deleted_at`. Change history is kept by database triggers in
+per-table history tables with the acting user and request (ADR 0014), readable "as of" a time.
+Bookings are never deleted; they are cancelled.
+
+## Conventions and sources
+
+| Rule | Source |
+|---|---|
+| Integrity in the database: FK, UNIQUE, CHECK; application validation mirrors it | SQL standard (ISO/IEC 9075); PostgreSQL docs |
+| `timestamptz` not `timestamp`; `numeric` not `money` or floats; `text` + CHECK not `varchar(n)`; identity or UUID keys; lower case snake_case | PostgreSQL wiki "Don't Do This" |
+| Money = `numeric(12,2)` + ISO 4217 code; booking keeps price and danger at booking time | Fowler, Money and Snapshot patterns; ISO 4217 |
+| Country codes ISO 3166-1 alpha-2; dates ISO 8601; zones IANA names | ISO 3166, ISO 8601, IANA tz database |
+| Conceptual model (00-domain) separate from logical and physical (this file) | DAMA-DMBOK |
+| Third normal form; derived values computed unless an ADR stores them | Codd; ADR 0003 |
+| History by triggers, "as of" reads | SQL:2011 system versioning (emulated, ADR 0014) |
+| Indexes justified by named queries with documented plans | PostgreSQL EXPLAIN practice |
+| Schema and diagram kept equal by generation or test | pgTAP / graph_models practice |

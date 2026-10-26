@@ -18,3 +18,4 @@ supersedes an earlier one. Status: proposed, accepted, superseded, rejected.
 | [0011](0011-date-range-on-departure.md) | The date range filter applies to the departure date; packages carry a duration | proposed |
 | [0012](0012-persist-weather-samples.md) | Forecast slots and observations are persisted for known locations | proposed |
 | [0013](0013-daily-summary-and-time.md) | Daily summary rules (mean, min, max; daytime significant weather) and UTC storage with IANA local days | proposed |
+| [0014](0014-history-by-triggers.md) | Change history by database triggers (per-table history, actor from session context), not an application audit log | proposed |

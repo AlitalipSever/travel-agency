@@ -363,11 +363,36 @@ quality scenarios in 02 §10.2.
 
 #### N2 Clean data model
 
-- **Statement.** The data model shall be readable in one sitting, with explicit constraints and no duplicated derived values without a stated reason.
-- **Rationale.** The brief: "model the data in a clean and professional way".
+- **Statement.** The data model shall be normalised, explicit about its constraints, consistent
+  in naming and types, and small enough to read in one sitting.
+- **Rationale.** The brief: "model the data in a clean and professional way". The rules below
+  follow the sources listed in 03-data-model §Conventions (SQL standard constraints, the
+  PostgreSQL "Don't Do This" list, ISO 4217 / 3166 / 8601, the IANA zone names, DAMA-DMBOK's
+  conceptual to physical split, Fowler's Money and Snapshot patterns).
 - **Acceptance.**
-  1. ER diagram, constraints and indexes documented; derived values (package danger, remaining seats, end date) computed, not stored, unless an ADR says otherwise.
-- **Satisfied by.** 03-data-model; ADR 0002, 0003, 0011.
+  1. Integrity rules live in the database (foreign keys, unique constraints, CHECKs for danger
+     0 to 3, capacity >= 1, duration >= 1, coordinate ranges, booking seats >= 1) and are
+     mirrored, not replaced, by application validation.
+  2. Tables are in third normal form; derived values (package danger, remaining seats, end
+     date) are computed, not stored. The two snapshots on a booking (price and danger at
+     booking time) are deliberate copies that keep the booking record immutable, and are
+     documented as such.
+  3. Naming and types follow one convention: UUID keys, `timestamptz` columns end in `_at`,
+     `date` columns in `_on`, money as `numeric(12,2)` with an ISO 4217 code (never `money`
+     or floats), `text` with CHECKs instead of `varchar(n)`, closed sets as CHECK constraints,
+     operations-managed sets as reference tables, lower case snake_case identifiers.
+  4. Every table carries `created_at` and `updated_at`; soft-deleted tables carry `deleted_at`.
+  5. Change history of the catalogue, departures, bookings, locations and bracket settings is
+     kept by database triggers in per-table history tables with the acting user and request
+     (ADR 0014), so that any row can be read "as of" a time; application code cannot forget it.
+  6. Every index is justified by a named query (P5, L3, W2) and its plan is documented; no
+     speculative indexes.
+  7. The ER diagram matches the schema: it is generated from the models or checked by a test
+     that compares table and column names.
+  8. At most twelve application tables (history tables excluded), none above fifteen columns;
+     the ER diagram fits on one page.
+- **Satisfied by.** 03-data-model; ADR 0002, 0003, 0011, 0014; migrations;
+  `core/tests/test_schema.py`.
 
 #### N3 Performance, stability, maintainability
 
