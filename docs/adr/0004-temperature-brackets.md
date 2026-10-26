@@ -26,5 +26,9 @@ The response always returns the edges used, so the consumer never guesses.
 
 ## Consequences
 
-Edges live in a settings table with validation (ascending, no gaps). The grouping reads
-temperatures from the cache written by the refresh job (0005); it never calls upstream.
+Edges live in a settings table with validation (ascending, no gaps). Brackets are half-open
+(lower edge included, upper excluded) with an open bracket below the lowest edge and one at or
+above the highest, so every temperature lands in exactly one bracket. Locations without a
+temperature yet are returned in a separate "no data" group with the reason. Each location
+carries its observed time and a stale mark past a configured age. The grouping reads the
+latest observation per location from the samples of ADR 0012; it never calls upstream.

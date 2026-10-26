@@ -20,7 +20,7 @@ share is exhausted the response is 429 with `Retry-After` (W4).
 |---|---|---|
 | GET, POST | `/locations` | List, create (`ops`); `timezone` optional, derived from coordinates when omitted; creation triggers an immediate refresh |
 | GET, PATCH, DELETE | `/locations/{id}` | Detail, update (including `active`), soft delete (`ops`); DELETE answers 409 with the active destinations when any exist |
-| GET | `/locations/brackets` | Locations grouped by current temperature bracket; bracket edges and `refreshed_at` in the response |
+| GET | `/locations/brackets?mode=fixed|quantile&buckets=` | Active locations grouped by current temperature: `brackets[]` (label, `from`, `to`, locations with temperature, `observed_at`, `stale`), open ended first and last bracket, empty brackets kept in fixed mode, a `no_data[]` group with reasons; `edges`, `mode`, `refreshed_at` (L3, L4) |
 | POST | `/locations/refresh` | Trigger a refresh now (staff); returns the task id |
 
 ## Catalogue

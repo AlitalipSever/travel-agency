@@ -172,13 +172,23 @@ quality scenarios in 02 §10.2.
 
 #### L3 Grouping by temperature
 
-- **Statement.** The system shall return the locations grouped by their current temperature bracket, stating the bracket edges used and when the temperatures were read.
+- **Statement.** The system shall return the active locations grouped by their current
+  temperature bracket, stating the bracket edges used and when each temperature was read.
 - **Rationale.** The brief asks for the list grouped by temperature bracket.
 - **Acceptance.**
-  1. Every active location appears in exactly one bracket.
-  2. The response carries the edges, the mode used and the refresh time of the temperatures.
-  3. Serving the response triggers no upstream call.
-- **Satisfied by.** ADR 0004 (brackets), ADR 0005 (refresh); 04-api §Locations.
+  1. Brackets are half-open intervals, lower edge included, upper excluded, with an open
+     bracket below the lowest edge and another at or above the highest, so that every
+     temperature falls into exactly one bracket.
+  2. Every active location with a temperature appears in exactly one bracket; a location
+     without one (not yet refreshed, or never fetched) appears in a separate "no data" group
+     with the reason, never hidden.
+  3. Each location carries its temperature and the time it was observed; a value older than a
+     configured age is marked stale but still placed.
+  4. In fixed mode an empty bracket is returned with zero locations (A4).
+  5. The response carries the edges, the mode used and the time of the last refresh; brackets
+     are ordered by temperature ascending and so are the locations inside.
+  6. Serving the response triggers no upstream call and meets the W1 (1) latency target.
+- **Satisfied by.** ADR 0004, ADR 0005, ADR 0012; A4; 04-api §Locations.
 
 #### L4 Bracket tuning
 
