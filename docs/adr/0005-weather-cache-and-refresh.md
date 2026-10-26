@@ -24,7 +24,9 @@ implementation calls upstream N times per request.
 Option 3. Known locations are refreshed every 15 minutes by Celery beat, inside a call budget.
 Ad hoc coordinates (W1, W2) are fetched on miss with a 10 minute TTL, timeouts and bounded
 retries. When upstream fails, the last value is returned with `source: stale` and its age; the
-response is never a 5xx because of the upstream. Daily aggregation of the 3 hour slots happens
+response is never a 5xx because of the upstream while a stored value exists. With no stored
+value (a coordinate asked for the first time during an outage) the API answers 503 with a
+problem detail and a Retry-After header: no made-up data, no empty 200. Daily aggregation of the 3 hour slots happens
 in the adapter: mean temperature, min, max, most frequent condition per calendar day in the
 location's timezone.
 

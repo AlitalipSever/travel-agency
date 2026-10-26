@@ -43,13 +43,24 @@ quality scenarios in 02 §10.2.
 
 #### W1 Current weather
 
-- **Statement.** For a latitude and longitude, the system shall return the current temperature and condition, together with the time of observation and whether the value is live or stored.
-- **Rationale.** The brief asks for the current weather of a given location.
+- **Statement.** For a latitude and longitude, the system shall return the current
+  temperature (degrees Celsius) and condition, together with the time of observation and
+  whether the value is live, cached or stale.
+- **Rationale.** The brief asks for the current weather of a given location; A14 fixes the
+  units.
 - **Acceptance.**
-  1. Valid coordinates are answered within one second on a warm system.
-  2. Invalid coordinates (out of range, missing, not numeric) are rejected with a problem detail and no upstream call.
-  3. During an upstream outage the last known value is returned and marked as stored or stale; the endpoint never answers 5xx because of the upstream.
-- **Satisfied by.** ADR 0005 (cache, stale fallback); 04-api §Weather; tests in `weather/tests/`.
+  1. A known location, or a coordinate asked recently, is answered from stored data with p95
+     latency under 100 ms.
+  2. A coordinate asked for the first time is answered with p95 latency under 1.5 s including
+     the upstream call.
+  3. Invalid coordinates (out of range, missing, not numeric) are rejected with a problem
+     detail and cause no upstream call.
+  4. When the upstream is down, slow or rate limiting and a stored value exists, that value is
+     returned and marked stale with its age; no 5xx.
+  5. When the upstream is unavailable and no stored value exists, the response is 503 with a
+     problem detail and a Retry-After header; no made-up data, no empty 200.
+- **Satisfied by.** ADR 0005 (cache, stale fallback, unavailability); 04-api §Weather; tests
+  in `weather/tests/`.
 
 #### W2 Daily forecast
 
@@ -80,7 +91,7 @@ quality scenarios in 02 §10.2.
 - **Acceptance.**
   1. No request for a known location waits on the upstream.
   2. Upstream calls per minute stay below the limit at the configured refresh rate and location count; the budget used is observable.
-  3. An upstream outage produces no 5xx from the weather endpoints and is visible in the operations status.
+  3. An upstream outage produces no 5xx from the weather endpoints while stored values exist, and is visible in the operations status.
   4. Repeated upstream failures stop further calls for a cooling period and resume automatically.
 - **Satisfied by.** ADR 0005 (scheduled refresh, cache, circuit breaker), ADR 0012; 06-operations.
 
@@ -248,6 +259,7 @@ quality scenarios in 02 §10.2.
 | A11 | Does "next five days" include today, and how are cut days reported | Response has `today` and `days` (five, from tomorrow). Today is complete for known locations once samples exist (0012), partial for ad hoc coordinates; a day cut by the 120 hour window is marked `partial`; every day reports its sample counts | 0013 |
 | A12 | What the daily "condition" is | Daytime slots, most significant weather first (thunderstorm, rain, snow, fog, cloudy, clear), most frequent as tie break; upstream codes mapped to that closed set | 0013 |
 | A13 | Which day is "a day" | The location's local calendar day: timestamps stored in UTC, each location carries an IANA zone, summaries convert in code and state the zone | 0013 |
+| A14 | Units | Metric: degrees Celsius, m/s, hPa; other unit systems in the roadmap | 04-api |
 
 ## 4. Out of scope, deliberately
 
