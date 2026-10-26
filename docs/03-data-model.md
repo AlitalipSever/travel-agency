@@ -7,7 +7,7 @@ Status: draft, 2026-10-26.
 ```mermaid
 erDiagram
   Location ||--o{ Destination : "has"
-  Destination }o--o{ TourPackage : "part of"
+  Destination }o--o{ TourPackage : "part of, ordered"
   TourPackage ||--o{ Departure : "offered on"
   Departure ||--o{ Booking : "reserved by"
   Traveller ||--o{ Booking : "made for"
@@ -51,6 +51,8 @@ erDiagram
     uuid traveller_id
     uuid partner_id "null for the agency's own sales"
     int seats
+    decimal price_at_booking "per traveller, copied from the package"
+    string currency
     string idempotency_key
     enum status "confirmed, cancelled"
   }
@@ -88,7 +90,8 @@ the location's IANA zone (ADR 0013).
 ## Constraints
 
 - Departure: unique (package_id, starts_on); capacity > 0.
-- TourPackage: duration_days >= 1.
+- TourPackage: duration_days >= 1; description at most 2,000 characters; price per traveller
+  (A15); delete refused while any departure has bookings (deactivate instead).
 - Booking: seats > 0; unique idempotency_key per traveller; a `partner` user's bookings carry
   its partner_id and are the only ones it can read.
 - Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180];
@@ -102,7 +105,8 @@ the location's IANA zone (ADR 0013).
 
 - Departure (starts_on) for the date range filter.
 - Booking (departure_id, status) for the remaining seats aggregate.
-- Destination (location_id); the package to destination join table on both keys.
+- Destination (location_id); the package to destination join table on both keys, with a
+  `position` column and unique (package_id, destination_id).
 - WeatherSample (location_id, slot_time) for the daily summary read.
 
 ## Seed data

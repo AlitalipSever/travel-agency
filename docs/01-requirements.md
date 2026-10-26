@@ -215,13 +215,25 @@ quality scenarios in 02 §10.2.
 
 #### P1 Package
 
-- **Statement.** The system shall store tour packages with name, price, description, duration and a set of destinations.
-- **Rationale.** The brief lists name, price, description and destinations; duration is added by A10 so that an end date exists.
+- **Statement.** Operations shall manage tour packages with name, price, description, duration
+  and an ordered list of destinations.
+- **Rationale.** The brief lists name, price, description and "a series of destinations";
+  duration is added by A10 so that an end date exists; the price is per traveller (A15).
 - **Acceptance.**
-  1. CRUD by the `ops` role through API and admin.
-  2. Price is a decimal with an ISO currency code, never a float (A7).
-  3. A package without destinations can be saved as a draft but is never bookable.
-- **Satisfied by.** 03-data-model; A7, A10; 04-api §Catalogue.
+  1. CRUD by the `ops` role through API and admin; every role can read active packages.
+  2. Price is a decimal with an ISO currency code, never a float (A7), and is the price per
+     traveller; changing it does not change existing bookings, which keep the price they were
+     made at.
+  3. Destinations keep the order operations gave them; the same destination appears at most
+     once in a package.
+  4. Duration is at least one day; the description is short text (at most 2,000 characters).
+  5. A package is bookable only when it is active, has at least one destination and at least
+     one bookable departure (P3); otherwise it is a draft or inactive and never appears in the
+     bookable search.
+  6. A package whose departures have bookings cannot be deleted; it is deactivated instead,
+     and its bookings stay visible.
+  7. Every write is recorded with actor and time.
+- **Satisfied by.** 03-data-model; A7, A10, A15; 04-api §Catalogue; 02 §8 (audit).
 
 #### P2 Destination
 
@@ -334,6 +346,7 @@ quality scenarios in 02 §10.2.
 | A12 | What the daily "condition" is | Daytime slots, most significant weather first (thunderstorm, rain, snow, fog, cloudy, clear), most frequent as tie break; upstream codes mapped to that closed set | 0013 |
 | A13 | Which day is "a day" | The location's local calendar day: timestamps stored in UTC, each location carries an IANA zone, summaries convert in code and state the zone | 0013 |
 | A14 | Units | Metric: degrees Celsius, m/s, hPa; other unit systems in the roadmap | 04-api |
+| A15 | What the price is | Per traveller, the same for every departure of the package; a booking keeps the price at booking time; per-departure pricing in the roadmap | 03-data-model |
 
 ## 4. Out of scope, deliberately
 
