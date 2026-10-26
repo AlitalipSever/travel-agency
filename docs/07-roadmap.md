@@ -15,6 +15,7 @@ Filled in as packages close (see 05-work-packages.md).
 | High availability | One server is enough for the brief; HA is a platform step, not an application change | Second node, PostgreSQL with two instances, api replicas spread by anti affinity |
 | Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
 | Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
+| Notifying booked travellers when a destination's danger rises | Needs a notification channel and a policy; the change itself is audited and will raise an event (P2, ADR 0008) | Consumer of DestinationDangerChanged that finds affected bookings and informs sales |
 | Per-departure pricing and seasonal prices | One price per package is what the brief describes (A15) | A price on the departure overriding the package's, and a price history |
 | Unit systems other than metric | Celsius is natural for the agency and its markets (A14) | A `units` query parameter converting at the edge |
 | Traveller self-service (role, booking UI) | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, GDPR access and erasure endpoints, and a front end |

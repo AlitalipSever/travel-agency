@@ -7,6 +7,7 @@ Status: draft, 2026-10-26.
 ```mermaid
 erDiagram
   Location ||--o{ Destination : "has"
+  DestinationType ||--o{ Destination : "classifies"
   Destination }o--o{ TourPackage : "part of, ordered"
   TourPackage ||--o{ Departure : "offered on"
   Departure ||--o{ Booking : "reserved by"
@@ -25,10 +26,16 @@ erDiagram
   Destination {
     uuid id
     uuid location_id
+    uuid type_id
     string name
-    enum type "adventure, cultural, nature, urban, beach"
     int danger "0 none, 1 low, 2 medium, 3 high"
     text description
+    bool active
+  }
+  DestinationType {
+    uuid id
+    string key "adventure, cultural, nature, urban, beach initially"
+    string label
   }
   TourPackage {
     uuid id
@@ -99,7 +106,9 @@ the location's IANA zone (ADR 0013).
   not given; `active = false` removes it from brackets and the refresh without deleting;
   delete is refused while active destinations reference it.
 - WeatherSample: unique (location_id, slot_time, kind).
-- Destination danger in [0, 3].
+- Destination danger in [0, 3]; unique (location_id, name); delete refused while any package
+  references it; `active = false` only blocks adding it to new packages.
+- DestinationType: `key` unique; maintained by operations, not a code enum.
 
 ## Indexes
 

@@ -237,13 +237,24 @@ quality scenarios in 02 §10.2.
 
 #### P2 Destination
 
-- **Statement.** The system shall store destinations, each linked to one location, with a type and a danger score.
-- **Rationale.** The brief: destinations link to a location, have a type and a danger score.
+- **Statement.** Operations shall manage destinations, each linked to one location, with one
+  type and a danger score.
+- **Rationale.** The brief: destinations link to a location, are one of several types and
+  carry a danger score that the agency keeps adjusting.
 - **Acceptance.**
-  1. Danger is an integer on the fixed scale 0 to 3 (A6); other values are rejected.
-  2. A destination may belong to several packages; a location may have several destinations.
-  3. Type is a closed set that operations can extend without a deployment.
-- **Satisfied by.** ADR 0003; 03-data-model; A6.
+  1. CRUD by the `ops` role through API and admin; every role can read destinations.
+  2. Danger is an integer on the fixed scale 0 to 3 (A6); other values are rejected. A change
+     of danger is recorded with actor and time and raises the `DestinationDangerChanged` event
+     once events exist (ADR 0008).
+  3. Types are a reference list that operations maintain (initial values adventure, cultural,
+     nature, urban, beach); a destination has exactly one type.
+  4. A destination may belong to several packages; a location may have several destinations;
+     name is unique within a location.
+  5. A destination used by any package cannot be deleted; the response names the packages. An
+     inactive destination cannot be added to new packages but stays in the packages that
+     contain it, danger included.
+  6. Every write is recorded with actor and time.
+- **Satisfied by.** ADR 0003; 03-data-model; A6; 00-domain §6; 04-api §Catalogue.
 
 #### P3 Dated availability with capacity
 
