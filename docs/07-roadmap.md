@@ -15,6 +15,7 @@ Filled in as packages close (see 05-work-packages.md).
 | High availability | One server is enough for the brief; HA is a platform step, not an application change | Second node, PostgreSQL with two instances, api replicas spread by anti affinity |
 | Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
 | Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
+| Internationalisation | One agency, one language in the brief; API payloads are language neutral | Translated labels (conditions, types) and localised formats behind an `Accept-Language` header |
 | Booking cut-off before departure | Whether a tour departing today is still bookable is the agency's policy; today it is | A cut-off in hours per package or globally, applied in the bookable rule and at booking time |
 | Holds, waiting lists, cancellation fees | A real agency's first questions after booking works; each is a policy the client must set | A hold status with expiry on bookings, a waiting list per departure, a fee rule on cancellation |
 | Notifying travellers of a cancelled departure | Same channel question as the danger notice | Consumer of the departure cancellation that lists affected bookings for sales |

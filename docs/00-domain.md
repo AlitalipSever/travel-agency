@@ -102,13 +102,16 @@ Named now, published later (ADR 0008): `DepartureCreated`, `DepartureSoldOut`,
 
 ## 7. Questions I would ask the client first
 
-| Question | Working assumption until answered |
-|---|---|
-| Who uses the system day to day, and do travellers book themselves? | Staff and partners; travellers through them (A8) |
-| How many packages, departures and bookings per year? | Hundreds of departures, thousands of bookings: PostgreSQL without partitioning |
-| How fresh must weather be for sales conversations? | 15 minutes for known locations (ADR 0005) |
-| "Between two dates": the departure, or the whole trip? | The departure (ADR 0011) |
-| "For a given danger score": exactly, or at most? | At most, exact as a flag (ADR 0003) |
-| Cancellation and refund rules? | Cancellation frees the seat; refunds out of scope |
-| Which currencies? | One per package, EUR default (A7) |
-| Do partners need their own prices or quotas? | No; same catalogue, own bookings |
+| Question | Working assumption until answered | Would change |
+|---|---|---|
+| Who uses the system day to day, and do travellers book themselves? | Staff and partners; travellers through them | A8; roles §5 |
+| How many packages, departures and bookings per year? | Hundreds of departures, thousands of bookings: PostgreSQL without partitioning | P5.7 targets |
+| How many locations will the list grow to? | Tens; the refresh budget adapts beyond that by lengthening the interval | W4.2 |
+| How fresh must weather be for sales conversations? | 15 minutes for known locations | ADR 0005 |
+| "Between two dates": the departure, or the whole trip? | The departure | A10, ADR 0011 |
+| "For a given danger score": exactly, or at most? | At most, exact as a flag | A1, ADR 0003 |
+| Which "today" decides bookability, and is a tour departing today still bookable? | The agency's time zone; yes, no cut-off | A16; roadmap (cut-off) |
+| Cancellation and refund rules? | Cancellation frees the seat and keeps the record; fees and refunds out of scope | P6.5; roadmap |
+| Which currencies, and is the price per person? | One per package, EUR default; per traveller | A7, A15 |
+| Do partners need their own prices or quotas? | No; same catalogue, own bookings only | §5; roadmap (pricing) |
+| Should travellers be told when a destination's danger rises or a departure is cancelled? | Not yet; the change is recorded and visible to sales | P2.2, P3.4; roadmap |

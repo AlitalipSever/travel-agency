@@ -474,31 +474,34 @@ quality scenarios in 02 §10.2.
 
 ## 3. Assumptions (gaps in the brief, how we fill them)
 
-| # | Gap | Assumption | ADR |
+| # | Gap | Assumption | Decided in |
 |---|---|---|---|
 | A1 | "For a given danger score": equal or at most | At most: the client asks "nothing more dangerous than medium". Exact match offered as a query flag | 0003 |
 | A2 | Capacity per package or per date | Per departure date. A sold out date does not block other dates | 0002 |
-| A3 | What "bookable" means | Departure date inside the range, in the future, and seats remaining | 0002 |
-| A4 | Temperature brackets fixed or dynamic | Configurable fixed edges, default tuned to the seed; a quantile mode as an option. In fixed mode a bracket may be empty in some seasons; the response returns it empty rather than hiding it | 0004 |
+| A3 | What "bookable" means | An active package with a danger score, and a planned departure that starts inside the range, on or after today in the agency's time zone (A16), with seats remaining | 0002; P5 |
+| A4 | Temperature brackets fixed or dynamic | Configurable fixed edges, default [10, 20, 25, 30] tuned to the seed; a quantile mode as an option. In fixed mode a bracket may be empty in some seasons; the response returns it empty rather than hiding it | 0004 |
 | A5 | Which cities count as capitals | The twelve sovereign states' capitals; Bolivia gives Sucre (constitutional) and La Paz (seat of government); Cayenne excluded, French Guiana is not a country | 03-data-model |
 | A6 | Danger score scale | Integer 0 to 3: none, low, medium, high | 0003 |
 | A7 | Currency of price | One currency per package, default EUR, stored as decimal plus ISO code | 03-data-model |
-| A8 | Who calls the API | Operations, sales and finance of the agency, and partner agencies' systems; travellers never call the API directly in this iteration. Token auth, roles `ops`, `sales`, `partner`, `finance` | 00-domain §5 |
+| A8 | Who calls the API | Operations, sales and finance of the agency, and partner agencies' systems; travellers never call the API directly in this iteration. Token auth, roles `ops`, `sales`, `partner`, `finance`; a partner sees only its own bookings | 00-domain §5 |
 | A9 | Framework | Django + DRF as the brief's stack implies, not FastAPI | 0001 |
 | A10 | "Between two dates": the departure inside the range, or the whole trip | The departure date inside the range (industry convention, the data the brief gives); packages get `duration_days` so each departure also reports `ends_on` | 0011 |
 | A11 | Does "next five days" include today, and how are cut days reported | Response has `today` and `days` (five, from tomorrow). Today is complete for known locations once samples exist (0012), partial for ad hoc coordinates; a day cut by the 120 hour window is marked `partial`; every day reports its sample counts | 0013 |
-| A12 | What the daily "condition" is | Daytime slots, most significant weather first (thunderstorm, rain, snow, fog, cloudy, clear), most frequent as tie break; upstream codes mapped to that closed set | 0013 |
+| A12 | What the daily "condition" is | Daytime slots; significant weather first in the order thunderstorm, rain, snow, fog; else the most frequent of cloudy and clear, cloudy on a tie; upstream codes mapped to a closed set with `unknown` as fallback | 0013; W3 |
 | A13 | Which day is "a day" | The location's local calendar day: timestamps stored in UTC, each location carries an IANA zone, summaries convert in code and state the zone | 0013 |
 | A14 | Units | Metric: degrees Celsius, m/s, hPa; other unit systems in the roadmap | 04-api |
 | A15 | What the price is | Per traveller, the same for every departure of the package; a booking keeps the price at booking time; per-departure pricing in the roadmap | 03-data-model |
+| A16 | Which "today" decides whether a departure is still bookable | The agency's time zone, a setting operations can change; a departure starting today is still bookable (cut-off in the roadmap) | P5; 02 §8 |
 
 ## 4. Out of scope, deliberately
 
-Payments, user registration and password flows, multi tenancy, a traveller facing booking
-front end, internationalisation. Each is named in 07-roadmap.md with what it would take.
+Payments and refunds, user registration and password flows, traveller self-service, multi
+tenancy, internationalisation, event streaming and high availability. The full list, each with
+why it is left out and what it would take, is 07-roadmap.md; it also holds the policy items a
+real agency would ask about next (holds, fees, cut-off, notifications).
 
 ## 5. Questions I would ask the client first
 
-Listed with the working assumption behind each in [00-domain.md](00-domain.md) section 7.
-None blocks the work: every answer that differs from the assumption is a small, localised
-change, and the assumptions above say where.
+Listed with the working assumption behind each in [00-domain.md](00-domain.md) section 7;
+every row there points at the assumption (A) or requirement it would change. None blocks the
+work: an answer that differs from the assumption is a small, localised change.
