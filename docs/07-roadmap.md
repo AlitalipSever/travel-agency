@@ -1,0 +1,35 @@
+# 07 Roadmap
+
+Status: draft, 2026-10-26. Three lists, kept honest: what is done, what was left out on
+purpose, what comes next.
+
+## Done
+
+Filled in as packages close (see 05-work-packages.md).
+
+## Deliberately left out
+
+| Item | Why | What it would take |
+|---|---|---|
+| Event streaming (Kafka) | No requirement needs an event bus yet; the refresh job and bookings are fine as tasks and transactions | Outbox table, a producer in the booking service, a consumer for notifications; Event Hubs or Redpanda in the chart |
+| High availability | One server is enough for the brief; HA is a platform step, not an application change | Second node, PostgreSQL with two instances, api replicas spread by anti affinity |
+| Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
+| Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
+| Customer facing booking UI | The brief is a backend brief; the demo page covers the loop | A real front end with its own design |
+| Weather history | Not asked; cheap to add | `WeatherSnapshot` rows written by the refresh job, a comparison endpoint |
+
+## Next two weeks, if this continued
+
+1. Restore drill and a written RPO/RTO.
+2. Outbox and domain events for bookings; a notification consumer.
+3. Rate limiting and quotas on the public API.
+4. Second node and PostgreSQL replica; load test with k6 and the numbers in this file.
+5. Weather history and a "same week last year" comparison for the brackets page.
+6. Contract tests against the OpenAPI schema; generated TypeScript client for the site.
+
+## How this grows with a larger team
+
+Module boundaries follow the Django apps: weather, locations, catalogue, booking. Each can be
+owned by one pair, each has its own tests and its own section in the ADR log. The chart stays
+one; values files multiply per environment. The first split into separate services would be the
+weather adapter, since its load profile (scheduled, upstream bound) differs from the API's.
