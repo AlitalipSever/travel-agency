@@ -24,8 +24,13 @@ local day via an IANA time zone.
 
 Temperature (b): `temp_avg` is the brief's number, `temp_min` and `temp_max` stand beside it.
 Condition (b): daytime slots (`sys.pod = d` from the upstream, else 06:00 to 18:00 local),
-priority thunderstorm > rain > snow > fog > cloudy > clear, most frequent when no significant
-weather occurs; upstream condition codes map to this closed set of labels.
+priority thunderstorm > rain > snow > fog, else the most frequent of cloudy and clear with
+cloudy on a tie; with no daytime slot all slots are used. Upstream condition codes map to the
+closed set thunderstorm, rain, snow, fog, cloudy, clear, unknown (unmapped codes yield unknown,
+never an error); 800 to 802 count as clear, 803 and 804 as cloudy. Precipitation probability
+(`pop`) is not used in the rule in this iteration; a threshold would be a judgement call and is
+left to the roadmap. The same rules apply to observed and forecast slots; temperatures are
+reported to one decimal.
 Day boundary (c): every timestamp is stored in UTC (`timestamptz`); each known location carries
 an IANA zone name (`America/Santiago`); summaries convert samples to the local calendar day in
 code, a slot belonging to the day in which it starts; the response states the zone and the

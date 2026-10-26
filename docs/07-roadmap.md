@@ -26,6 +26,8 @@ Filled in as packages close (see 05-work-packages.md).
 4. Second node and PostgreSQL replica; load test with k6 and the numbers in this file.
 5. A "same day last week" comparison on the brackets page, from the persisted weather samples.
 6. Contract tests against the OpenAPI schema; generated TypeScript client for the site.
+7. Precipitation probability in the daily condition rule (a slot with `pop` above a threshold
+   counts as rain), once the client says how cautious the label should be.
 
 ## How this grows with a larger team
 

@@ -86,14 +86,23 @@ quality scenarios in 02 §10.2.
 
 #### W3 Derived daily values
 
-- **Statement.** The system shall derive daily temperature values and a daily condition itself from the slot data the upstream provides.
-- **Rationale.** F1: the free tier has no daily endpoint; the brief wants daily values anyway.
+- **Statement.** The system shall derive each day's temperature values and condition label
+  itself from the slot data the upstream provides, applying the same rules to observed and
+  forecast slots.
+- **Rationale.** F1: the free tier has no daily endpoint; the brief wants daily values.
 - **Acceptance.**
-  1. Daily temperature is reported as average, minimum and maximum over the day's slots.
-  2. The daily condition is chosen from the daytime slots; significant weather (thunderstorm, rain, snow, fog) takes precedence over cloudy and clear; otherwise the most frequent wins.
-  3. Upstream condition codes map to a closed set of labels; unknown codes map to a defined fallback, never to an error.
-  4. A table test fixes the rules and their edge cases: no daytime slot, a daylight saving day with 7 or 9 slots, ties.
-- **Satisfied by.** ADR 0013; A12.
+  1. Daily temperature is reported as average, minimum and maximum over the day's slots, to
+     one decimal.
+  2. Daytime slots are those the upstream marks as day; without that mark, 06:00 to 18:00
+     local.
+  3. The daily condition is chosen from the daytime slots: significant weather first, in the
+     order thunderstorm, rain, snow, fog; otherwise the most frequent of cloudy and clear,
+     cloudy on a tie. With no daytime slot, all slots are used.
+  4. Upstream condition codes map to the closed set thunderstorm, rain, snow, fog, cloudy,
+     clear, unknown; an unmapped code yields unknown, never an error.
+  5. A table test fixes the rules and the edge cases: no daytime slot, a daylight saving day
+     with 7 or 9 slots, ties, an unmapped code.
+- **Satisfied by.** ADR 0013; A12; `weather/summary.py` and its table test.
 
 #### W4 Independence from the upstream
 
