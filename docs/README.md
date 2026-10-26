@@ -2,8 +2,10 @@
 
 | Document | What it answers |
 |---|---|
+| [00-domain.md](00-domain.md) | Stakeholders, actors and their jobs, ubiquitous language, roles (to be written) |
 | [01-requirements.md](01-requirements.md) | What the brief asks for, how it is decomposed, which gaps we fill with assumptions |
 | [02-architecture.md](02-architecture.md) | How the system is built: arc42 structure, C4 diagrams, containers, data flow, quality goals |
+| [arc42-checklist.md](arc42-checklist.md) | Every official arc42 subsection, where it lives in 02 and its status |
 | [adr/](adr/README.md) | Each significant decision with its context, options and consequences |
 | [03-data-model.md](03-data-model.md) | Entities, relations, derived values, indexes |
 | [04-api.md](04-api.md) | Endpoint list, request and response shapes, error format, auth |

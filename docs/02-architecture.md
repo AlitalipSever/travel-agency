@@ -1,27 +1,47 @@
 # 02 Architecture
 
-Status: draft, 2026-10-26. Structure follows arc42; diagrams follow C4.
+Status: draft, 2026-10-26. Structure follows arc42 (docs.arc42.org), subsection by
+subsection; diagrams follow C4. Open items are marked `TODO` and tracked in
+[arc42-checklist.md](arc42-checklist.md).
 
 ## 1. Introduction and goals
 
-The system serves a travel agency with weather driven information and a product catalogue
-(docs/01-requirements.md). Quality goals in order:
+### 1.1 Requirements overview
 
-1. Reliability toward the upstream weather API: the system answers even when OpenWeatherMap is
-   slow, down or rate limiting.
-2. Correctness of the product model: capacity, availability and danger are never ambiguous.
-3. Operability: one command to run locally, one pipeline to deploy, visible health.
-4. Maintainability: thin views, explicit services, tests at the seams, documented decisions.
+A travel agency backend: weather for coordinates and for the agency's locations (grouped by
+temperature bracket), and the product catalogue (packages, destinations, dated departures with
+capacity) with a bookable-packages search by date range and danger score. Full list and
+assumptions: [01-requirements.md](01-requirements.md).
+
+### 1.2 Quality goals
+
+Top goals in priority order, named after ISO 25010 characteristics:
+
+| # | Goal | ISO 25010 | Meaning here |
+|---|---|---|---|
+| 1 | Reliability toward the upstream | reliability: fault tolerance, availability | Answers even when OpenWeatherMap is slow, down or rate limiting |
+| 2 | Correctness of the product model | functional suitability: correctness | Capacity, availability and danger are never ambiguous |
+| 3 | Operability | maintainability: modifiability; reliability: recoverability | One command locally, one pipeline to deploy, visible health, restorable |
+| 4 | Maintainability | maintainability: modularity, testability | Thin views, explicit services, tests at the seams, documented decisions |
+
+### 1.3 Stakeholders
+
+`TODO (arc42 1.3)`: table with role, contact or channel, expectations; actors marked. Source:
+[00-domain.md](00-domain.md) once written (stakeholder onion, actors, jobs to be done).
 
 ## 2. Constraints
 
-- Stack: Python, Django, Django REST Framework, PostgreSQL, Redis (ADR 0001).
-- Free tier of OpenWeatherMap: 60 calls per minute, 3 hour forecast slots, no daily endpoint.
-- Portable deployment: the application depends only on standard interfaces (PostgreSQL, Redis,
-  S3 compatible storage, OpenTelemetry) so that the same Helm chart runs on any Kubernetes
-  (ADR 0006).
+| Kind | Constraint | Source |
+|---|---|---|
+| Technical | Python, Django, DRF, PostgreSQL, Redis | the brief; ADR 0001 |
+| Technical | OpenWeatherMap free tier: 60 calls/min, 3 hour slots, 120 hour window, no history | upstream; ADR 0005, 0012 |
+| Technical | Portable: only PostgreSQL, Redis, S3 compatible storage, OpenTelemetry as dependencies | ADR 0006 |
+| Organisational | One developer, a few days; delivered as a live system plus documents | project setting |
+| Convention | English; ADR per decision; files under 200 lines; no secrets in git | AGENTS.md |
 
-## 3. Context (C4 level 1)
+## 3. Context and scope
+
+### 3.1 Business context
 
 ```mermaid
 C4Context
@@ -34,26 +54,39 @@ C4Context
   Rel(travel-agency, owm, "HTTPS, API key, rate limited")
 ```
 
+`TODO (arc42 3.1)`: table of communication partners with their domain inputs and outputs;
+actors to be revised after 00-domain.md (roles beyond staff and client).
+
+### 3.2 Technical context
+
+`TODO (arc42 3.2)`: channels and protocols per partner (HTTPS + token for users and partner
+systems, HTTPS + API key to OpenWeatherMap, SQL and Redis protocol inside the cluster, S3 for
+backups) and which input or output travels over which channel.
+
 ## 4. Solution strategy
 
 - Weather is read through one adapter with a cache in front (Redis). Requests never fan out to
-  the upstream on the hot path for known locations; a scheduled job refreshes them (ADR 0005).
+  the upstream on the hot path for known locations; a scheduled job refreshes them and persists
+  what it fetches (ADR 0005, 0012); daily summaries follow ADR 0013.
 - The product model separates the catalogue (package, destination) from the sellable unit
   (departure: package + date + capacity). Bookings reduce remaining seats under a row lock
   (ADR 0002).
 - Derived values (package danger, remaining seats) are computed in queries, not stored, until a
   measured need says otherwise (ADR 0003).
-- Everything is a container; one Helm chart; environment differences live in values files only.
+- Everything is a container; one Helm chart; environment differences live in values files only
+  (ADR 0006).
 
-## 5. Building blocks (C4 level 2, containers)
+## 5. Building block view
+
+### 5.1 Level 1: containers (C4 level 2)
 
 ```mermaid
 C4Container
   Container(web, "web", "Next.js", "Case study site: overview, live demo, API docs, decisions, plan, operations, walkthrough")
   Container(api, "api", "Django + DRF, gunicorn", "REST API, admin, OpenAPI schema")
-  Container(worker, "worker", "Celery", "Weather refresh, bracket computation")
+  Container(worker, "worker", "Celery", "Weather refresh, sample persistence, bracket computation")
   Container(beat, "beat", "Celery beat", "Schedules the refresh")
-  ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, audit")
+  ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, weather samples, audit")
   ContainerDb(redis, "Redis", "", "Weather cache, Celery broker")
   System_Ext(owm, "OpenWeatherMap", "")
   Rel(web, api, "HTTPS /api")
@@ -65,15 +98,20 @@ C4Container
   Rel(beat, redis, "enqueue")
 ```
 
-Django apps inside `api` (C4 level 3 comes with the code): `weather` (adapter, cache,
-aggregation), `locations` (list, seed, brackets), `catalog` (destination, package),
-`booking` (departure, booking, availability query), `core` (auth, errors, audit, health).
+`TODO (arc42 5.1)`: black box table per container: purpose, interfaces, location in the repo.
 
-## 6. Runtime views
+### 5.2 Level 2: Django apps inside `api`
 
-Documented as sequence diagrams once the code exists:
+`weather` (adapter, cache, samples, daily summary), `locations` (list, seed, brackets),
+`catalog` (destination, package), `booking` (departure, booking, availability query), `core`
+(auth, errors, audit, health). `TODO (arc42 5.2)`: C4 component diagram and black box table once
+the code exists.
 
-- R1 Current weather request, cache hit and cache miss paths, stale fallback.
+## 6. Runtime view
+
+`TODO (arc42 6)`: sequence diagrams once the code exists, one per scenario:
+
+- R1 Current weather request: cache hit, cache miss, stale fallback.
 - R2 Scheduled refresh of all locations: fetch, upsert weather samples, write cache; rate
   limit budget, partial failure.
 - R3 Bookable packages query (date range on the departure date, ADR 0011).
@@ -101,40 +139,60 @@ flowchart LR
 
 Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind),
 `values-azure.yaml` (AKS with managed PostgreSQL and Redis; documented, not run). ADR 0006,
-0007, 0009.
+0007, 0009. `TODO (arc42 7)`: node sizing, namespaces and the mapping of containers to pods.
 
 ## 8. Cross cutting concepts
 
 - Errors: RFC 7807 problem details on every non 2xx response.
-- Auth: token per user, two groups (staff, client). Admin for staff.
+- Auth: token per user; roles `TODO` pending 00-domain.md (today: staff, client). Admin for staff.
 - Audit: who changed what and when on catalogue and departures; soft delete.
 - Idempotency: booking requests carry an idempotency key.
+- Time: UTC in storage, IANA zone per location, local days computed in code (ADR 0013).
 - Observability: structured JSON logs, OpenTelemetry traces, `/healthz` and `/readyz`,
   Prometheus metrics when the monitoring stack is installed.
 - Configuration: environment variables only, documented in `.env.example`.
 
 ## 9. Architecture decisions
 
-See docs/adr/README.md.
+See [adr/README.md](adr/README.md).
 
-## 10. Quality scenarios
+## 10. Quality requirements
 
-| Id | Scenario | Response |
-|---|---|---|
-| Q1 | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints keep answering from cache, marked stale; refresh job backs off |
-| Q2 | 13 locations, refresh every 15 minutes | Stays far under 60 calls per minute; budget tracked; samples table grows by about 400 rows a day and is pruned at 90 days |
-| Q3 | Two bookings for the last seat at the same moment | One succeeds, one gets 409; no overbooking |
-| Q4 | Deploy a new api version | Rolling update, no failed requests, migrations run first |
-| Q5 | Server lost | Terraform recreates, Helm reinstalls, PostgreSQL restored from last backup |
+### 10.1 Quality requirements overview
+
+`TODO (arc42 10.1)`: quality tree from the four goals in 1.2 down to the scenarios in 10.2.
+
+### 10.2 Quality scenarios
+
+Short form: context, stimulus, response, metric. U = usage scenario, C = change scenario.
+
+| Id | Type | Stimulus | Response | Metric |
+|---|---|---|---|---|
+| Q1 | U | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints answer from cache, marked stale; refresh job backs off | 0 upstream-caused 5xx; p95 latency unchanged |
+| Q2 | U | 13 locations refreshed every 15 minutes | Within the upstream budget; samples pruned at 90 days | < 5 calls/min of 60; table < 40k rows |
+| Q3 | U | Two bookings for the last seat at the same moment | One succeeds, one gets 409 | 0 overbookings in the concurrency test |
+| Q4 | U | Deploy a new api version | Rolling update, migrations first | 0 failed requests during rollout |
+| Q5 | U | Server lost | Terraform recreates, Helm reinstalls, PostgreSQL restored | restore drill under 30 minutes; RPO one night |
+| Q6 | C | Client changes the danger semantics to exact match | One query change, tests updated | under one hour, one ADR |
+| Q7 | C | A new weather provider | New adapter behind the same interface | no change outside `weather` |
 
 ## 11. Risks and technical debt
 
-Single node (no HA), free tier weather data, operator managed database on one disk. Each is
-named in 07-roadmap.md with the step that removes it.
+| Priority | Risk or debt | Consequence | Measure |
+|---|---|---|---|
+| 1 | Single node, single disk | Outage on server loss until restored | Backups + restore drill now; second node and replica in the roadmap |
+| 2 | Free tier weather data | No history, 3 hour resolution, 120 hour window | Persisted samples (ADR 0012); paid tier if the client needs more |
+| 3 | Operator-managed database with one instance | No failover | Two instances is one setting once a second node exists |
+| 4 | First day after deployment | Today's summary partial | Stated in the response (`partial`) |
 
 ## 12. Glossary
 
-Departure: a package on one date with its capacity; it ends after the package's duration. Bookable: departure in range, in the
-future, seats remaining. Danger score: 0 none, 1 low, 2 medium, 3 high. Weather sample: one 3 hour forecast slot or one
-observation for a known location, stored in UTC. Local day: the calendar day in the location's
-IANA zone.
+| Term | Definition |
+|---|---|
+| Departure | A package on one date with its capacity; ends after the package's duration |
+| Bookable | Departure in the requested range, in the future, with seats remaining |
+| Danger score | 0 none, 1 low, 2 medium, 3 high; a package's score is the max of its destinations |
+| Weather sample | One 3 hour forecast slot or one observation for a known location, stored in UTC |
+| Local day | The calendar day in the location's IANA zone |
+
+`TODO (arc42 12)`: merge with the ubiquitous language glossary of 00-domain.md once written.
