@@ -192,13 +192,24 @@ quality scenarios in 02 §10.2.
 
 #### L4 Bracket tuning
 
-- **Statement.** Bracket edges shall be adjustable so that the distribution is reasonable and, when wanted, no bracket is empty.
-- **Rationale.** The brief: "feel free to tweak the temperature ranges so each bracket has at least one location".
+- **Statement.** Bracket edges shall be adjustable by operations so that the distribution is
+  reasonable and, when wanted, no bracket is empty.
+- **Rationale.** The brief: "feel free to tweak the temperature ranges so each bracket has at
+  least one location".
 - **Acceptance.**
-  1. Edges are configurable by operations and validated (ascending, no gaps).
-  2. A mode exists that guarantees non empty brackets by deriving edges from the data.
-  3. In fixed mode an empty bracket is returned empty, never hidden (A4).
-- **Satisfied by.** ADR 0004; A4.
+  1. Operations set the fixed edges as a strictly ascending list of one to ten numbers; the
+     brackets follow from it (L3.1), so no other validation is needed.
+  2. A change takes effect on the next read; no refresh or recomputation is required, and it
+     is recorded with actor and time.
+  3. The default edges are documented together with the distribution they produced on the
+     seed data on a stated date.
+  4. Quantile mode derives edges from the current temperatures for a requested number of
+     brackets (default four) so that none is empty; when fewer distinct temperatures exist
+     than brackets requested, the number of brackets shrinks and the response says so.
+     Quantile edges are reported to one decimal.
+  5. The response reports the number of locations per bracket so the distribution can be
+     judged at a glance; in fixed mode an empty bracket is returned empty (A4).
+- **Satisfied by.** ADR 0004; A4; 04-api §Locations.
 
 ### 2.3 Tour packages
 

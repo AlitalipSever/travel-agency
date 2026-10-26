@@ -20,8 +20,9 @@ share is exhausted the response is 429 with `Retry-After` (W4).
 |---|---|---|
 | GET, POST | `/locations` | List, create (`ops`); `timezone` optional, derived from coordinates when omitted; creation triggers an immediate refresh |
 | GET, PATCH, DELETE | `/locations/{id}` | Detail, update (including `active`), soft delete (`ops`); DELETE answers 409 with the active destinations when any exist |
-| GET | `/locations/brackets?mode=fixed|quantile&buckets=` | Active locations grouped by current temperature: `brackets[]` (label, `from`, `to`, locations with temperature, `observed_at`, `stale`), open ended first and last bracket, empty brackets kept in fixed mode, a `no_data[]` group with reasons; `edges`, `mode`, `refreshed_at` (L3, L4) |
-| POST | `/locations/refresh` | Trigger a refresh now (staff); returns the task id |
+| GET | `/locations/brackets?mode=fixed|quantile&buckets=` | Active locations grouped by current temperature: `brackets[]` (label, `from`, `to`, locations with temperature, `observed_at`, `stale`), open ended first and last bracket, empty brackets kept in fixed mode, a `no_data[]` group with reasons; each bracket with its `count`; `edges`, `mode`, `requested_buckets` and `effective_buckets` in quantile mode, `refreshed_at` (L3, L4) |
+| POST | `/locations/refresh` | Trigger a refresh now (`ops`); returns the task id |
+| GET, PUT | `/locations/bracket-edges` | Read or set the fixed edges (`ops`), strictly ascending list of 1 to 10 numbers; audited (L4) |
 
 ## Catalogue
 

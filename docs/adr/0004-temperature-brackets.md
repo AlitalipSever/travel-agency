@@ -26,7 +26,13 @@ The response always returns the edges used, so the consumer never guesses.
 
 ## Consequences
 
-Edges live in a settings table with validation (ascending, no gaps). Brackets are half-open
+Edges live in a settings table as a strictly ascending list of one to ten numbers; the default
+is [10, 20, 25, 30] (brackets: below 10, 10 to 20, 20 to 25, 25 to 30, 30 and above), chosen
+for South American capitals; the distribution it produced on the seed data is recorded in the
+seed file on the day the system first ran. A change applies on the next read and is audited.
+Quantile mode takes a bracket count (default four), derives edges from the current
+temperatures to one decimal, and shrinks the count when fewer distinct temperatures exist,
+saying so in the response. Brackets report their location count. Brackets are half-open
 (lower edge included, upper excluded) with an open bracket below the lowest edge and one at or
 above the highest, so every temperature lands in exactly one bracket. Locations without a
 temperature yet are returned in a separate "no data" group with the reason. Each location
