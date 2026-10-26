@@ -1,6 +1,6 @@
 # 0005 Weather for known locations is refreshed by a scheduled job into PostgreSQL; Redis caches ad hoc coordinates; stale fallback
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: W1, W4; L3
 

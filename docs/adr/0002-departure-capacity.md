@@ -1,6 +1,6 @@
 # 0002 Capacity belongs to a departure date, bookings take a row lock
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: P3, P5, P6; A2, A3
 
@@ -28,7 +28,12 @@ if the aggregate shows up in measurements.
 
 ## Consequences
 
-Bookable = departure in the requested range, in the future, remaining seats > 0. The bookable
-query joins departures and aggregates bookings; indexes on `departure.starts_on` and
+Bookable = an active package with a danger score, and a planned departure that starts inside
+the requested range, on or after today in the agency's time zone, with remaining seats > 0
+(P5, A3, A16). A booking is at least one seat and at most the remaining seats, carries an
+idempotency key unique per caller, and keeps the price and danger at booking time; cancelling
+frees the seats and keeps the record. Capacity cannot be lowered below confirmed seats; a
+departure with bookings is cancelled, not deleted (P3, P6). The bookable query joins
+departures and aggregates bookings; indexes on `departure.starts_on` and
 `booking(departure_id, status)`. A concurrency test with two parallel bookings for the last
 seat is part of the suite.

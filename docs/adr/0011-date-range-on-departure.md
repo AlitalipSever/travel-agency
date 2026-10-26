@@ -1,6 +1,6 @@
 # 0011 The date range filter applies to the departure date
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: P1, P5; A10
 

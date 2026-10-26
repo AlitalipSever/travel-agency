@@ -1,6 +1,6 @@
 # 0006 Deploy on k3s on one Hetzner server with one Helm chart; cloud independence over managed services
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: N5
 

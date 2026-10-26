@@ -1,6 +1,6 @@
 # 0009 Images in GitHub Container Registry, built by GitHub Actions for arm64 and amd64
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: N5
 

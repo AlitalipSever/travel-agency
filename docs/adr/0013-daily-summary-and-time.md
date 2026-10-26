@@ -1,6 +1,6 @@
 # 0013 Daily summary rules and time handling
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: W2, W3; A11, A12, A13
 

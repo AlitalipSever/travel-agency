@@ -1,6 +1,6 @@
 # 0014 Change history by database triggers, not an application audit log
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-27
 Addresses: N2, L1, P1, P2, P3, P6 (audit criteria); 00-domain §2 (regulators)
 

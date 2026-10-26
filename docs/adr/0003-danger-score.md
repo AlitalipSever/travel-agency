@@ -1,6 +1,6 @@
 # 0003 Danger score scale, "at most" semantics, derived in the query
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: P2, P4, P5; A1, A6
 
@@ -27,6 +27,8 @@ synchronisation for no measured gain.
 ## Consequences
 
 Adding a destination to a package can change the package's score immediately and
-consistently. If the catalogue grows to a size where the aggregate costs, a stored, trigger
+consistently; inactive destinations still count (P2.5); a package with no destinations has a
+null score and is a draft (P4.2); the API shows the score with its label; a booking records
+the package's danger at booking time (P4.5). If the catalogue grows to a size where the aggregate costs, a stored, trigger
 maintained column is the next step and would be a new ADR. The same scale is reused for the
 traveller risk appetite in the suitability extra.

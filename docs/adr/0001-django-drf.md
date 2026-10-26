@@ -1,6 +1,6 @@
 # 0001 Django and Django REST Framework as the application framework
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: A9; L1; N1
 
@@ -27,5 +27,6 @@ accepted; the API surface is small enough that DRF's generic views and serialize
 ## Consequences
 
 Thin views, logic in per app `services` modules so that the framework does not leak into the
-domain. drf-spectacular for the schema. Celery with Redis as broker for background work. Async
+domain. The Django admin is the operations UI for locations, destinations, packages and
+departures (role `ops`); the API serves the same writes for automation. drf-spectacular for the schema. Celery with Redis as broker for background work. Async
 is not needed for the request path because the upstream calls are moved to the worker (0005).

@@ -19,7 +19,7 @@ row per official subsection; the status column is updated with every change to
 | 6 Runtime view | Sequence per important scenario | 02 §6 | partial (data flows drawn, sequences after code) |
 | 7 Deployment view | Infrastructure, mapping of blocks to nodes | 02 §7 | partial (sizing and pod mapping) |
 | 8 Crosscutting concepts | Selected system-wide concepts | 02 §8 | done |
-| 9 Architecture decisions | ADRs | adr/ | done (13 proposed) |
+| 9 Architecture decisions | ADRs | adr/ | done (14 accepted 2026-10-27) |
 | 10.1 Quality overview | Quality tree or table | 02 §10.1 | todo |
 | 10.2 Quality scenarios | Usage and change scenarios with metrics | 02 §10.2 | done |
 | 11 Risks and technical debt | Prioritised table with measures | 02 §11 | done |

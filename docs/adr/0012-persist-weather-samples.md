@@ -1,6 +1,6 @@
 # 0012 Forecast slots and observations are persisted for known locations
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: W2, W4
 

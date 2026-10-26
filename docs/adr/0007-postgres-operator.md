@@ -1,6 +1,6 @@
 # 0007 PostgreSQL through the CloudNativePG operator
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: N5
 

@@ -1,6 +1,6 @@
 # 0008 No event streaming (Kafka) in this iteration
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: N4 (deferred); P2, P3, P6 name the events
 
@@ -20,7 +20,8 @@ delivery semantics to the system.
 
 Option 2. Nothing in the brief needs asynchronous fan out; adding a broker now would be
 complexity without a consumer. The booking service is written behind an interface that a later
-outbox publisher can hook into. Named in the roadmap as the first next step.
+outbox publisher can hook into; the events are already named in 00-domain §6 and in P2, P3
+and P6. Named in the roadmap as the first next step.
 
 ## Consequences
 

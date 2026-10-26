@@ -1,6 +1,6 @@
 # 0010 Architecture documentation in arc42 structure with C4 diagrams in Mermaid
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: N1
 
@@ -25,5 +25,7 @@ GitHub and on the site without image files.
 
 ## Consequences
 
-docs/02-architecture.md follows arc42; component level (C4 level 3) is added once code exists.
-ADRs under docs/adr with the template in 0000-template.md.
+docs/02-architecture.md follows arc42 with a one-page summary in front (N1); component level
+(C4 level 3) is added once code exists. Requirements follow the ISO 29148 properties with
+acceptance checks (01-requirements §2) and every ADR carries an Addresses line back to them.
+ADRs under docs/adr with the template in 0000-template.md; arc42-checklist.md tracks coverage.

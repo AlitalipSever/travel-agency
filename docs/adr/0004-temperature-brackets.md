@@ -1,6 +1,6 @@
 # 0004 Temperature brackets are configurable fixed edges, quantile mode optional
 
-Status: proposed
+Status: accepted (2026-10-27)
 Date: 2026-10-26
 Addresses: L3, L4; A4
 
@@ -14,7 +14,8 @@ depending on season; fixed textbook edges leave brackets empty.
 ## Options
 
 1. Hard coded edges: predictable, breaks the "at least one per bracket" wish in some seasons.
-2. Configurable fixed edges (a setting, editable by staff), defaults tuned to the seed data.
+2. Configurable fixed edges (a setting, editable by operations), defaults tuned to the seed
+   data.
 3. Dynamic edges computed from the data (quantiles): never empty, but edges move every refresh
    and are hard to communicate.
 
