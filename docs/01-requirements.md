@@ -228,7 +228,7 @@ quality scenarios in 02 §10.2.
      once in a package.
   4. Duration is at least one day; the description is short text (at most 2,000 characters).
   5. A package is bookable only when it is active, has at least one destination and at least
-     one bookable departure (P3); otherwise it is a draft or inactive and never appears in the
+     one bookable departure (P3, P6); otherwise it is a draft or inactive and never appears in the
      bookable search.
   6. A package whose departures have bookings cannot be deleted; it is deactivated instead,
      and its bookings stay visible.
@@ -256,16 +256,25 @@ quality scenarios in 02 §10.2.
   6. Every write is recorded with actor and time.
 - **Satisfied by.** ADR 0003; 03-data-model; A6; 00-domain §6; 04-api §Catalogue.
 
-#### P3 Dated availability with capacity
+#### P3 Departures and capacity
 
-- **Statement.** A package shall be offered on several dates, each with its own capacity, and the system shall never sell more seats than a date has.
-- **Rationale.** The brief: multiple dates and limited capacity; A2 places the capacity on the date, A3 defines bookable.
+- **Statement.** Operations shall offer a package on several dates, each departure with its own
+  capacity, and the system shall never let confirmed seats exceed that capacity.
+- **Rationale.** The brief: multiple dates and limited capacity; A2 puts the capacity on the
+  date, A3 defines bookable.
 - **Acceptance.**
-  1. Each departure shows its capacity and remaining seats.
-  2. Two concurrent bookings of the last seat yield exactly one success and one conflict response.
-  3. A retried booking request with the same idempotency key does not book twice.
-  4. A cancelled booking frees its seats and remains on record.
-- **Satisfied by.** ADR 0002 (departure, row lock, idempotency); 04-api §Bookings.
+  1. CRUD of departures (start date, capacity) by the `ops` role; one departure per package and
+     date; capacity at least one.
+  2. Each departure reports capacity, confirmed seats and remaining seats, and its end date
+     from the package's duration (ADR 0011).
+  3. Capacity cannot be lowered below the confirmed seats; the response states the number.
+  4. A departure with bookings cannot be deleted; it can be cancelled, which marks its bookings
+     as cancelled by the agency and removes it from the bookable search. A departure without
+     bookings can be deleted.
+  5. A departure in the past is not bookable and stays on record.
+  6. Every write is recorded with actor and time; a departure reaching zero remaining seats
+     raises `DepartureSoldOut` once events exist.
+- **Satisfied by.** ADR 0002, ADR 0011; 03-data-model; 04-api §Catalogue.
 
 #### P4 Package danger
 
@@ -286,6 +295,28 @@ quality scenarios in 02 §10.2.
   3. Each result carries the package data and the matching departures with start date, end date and remaining seats.
   4. Results are paginated and the query stays index backed as data grows (EXPLAIN documented).
 - **Satisfied by.** ADR 0002, 0003, 0011; A1, A3, A10; 04-api §Bookable search.
+
+#### P6 Booking (extra feature that gives capacity its meaning)
+
+- **Statement.** Sales, partners and operations shall book seats on a departure for a traveller
+  and cancel such bookings, without ever overbooking.
+- **Rationale.** Not demanded by the brief, but "bookable" and "limited capacity" have no
+  observable meaning without it; it is the first extra (N4) and the job of sales and partners
+  (00-domain §3).
+- **Acceptance.**
+  1. A booking names a departure, a traveller and a number of seats (at least one, at most the
+     remaining seats); otherwise 409 with the remaining count.
+  2. Two concurrent bookings of the last seat yield exactly one success and one conflict.
+  3. A repeated request with the same idempotency key returns the original booking and books
+     nothing new; the key is unique per caller.
+  4. The booking keeps the price per traveller and currency at booking time (P1.2).
+  5. Cancelling frees the seats and keeps the record; cancelling twice returns the same result
+     without error.
+  6. A partner sees and cancels only its own bookings; sales and operations see all; finance
+     reads all.
+  7. Every booking and cancellation is recorded with actor and time and raises
+     `BookingConfirmed` or `BookingCancelled` once events exist.
+- **Satisfied by.** ADR 0002, ADR 0008; 00-domain §5; 04-api §Bookings.
 
 ### 2.4 Non functional requirements
 

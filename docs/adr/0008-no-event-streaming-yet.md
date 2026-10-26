@@ -2,7 +2,7 @@
 
 Status: proposed
 Date: 2026-10-26
-Addresses: N4 (deferred)
+Addresses: N4 (deferred); P2, P3, P6 name the events
 
 ## Context
 

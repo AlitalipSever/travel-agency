@@ -51,6 +51,7 @@ erDiagram
     uuid package_id
     date starts_on
     int capacity
+    enum status "planned, cancelled"
   }
   Booking {
     uuid id
@@ -62,6 +63,7 @@ erDiagram
     string currency
     string idempotency_key
     enum status "confirmed, cancelled"
+    enum cancelled_by "traveller_request, agency, departure_cancelled; null while confirmed"
   }
   Traveller {
     uuid id
@@ -96,10 +98,13 @@ the location's IANA zone (ADR 0013).
 
 ## Constraints
 
-- Departure: unique (package_id, starts_on); capacity > 0.
+- Departure: unique (package_id, starts_on); capacity > 0; capacity never below confirmed
+  seats; delete refused while bookings exist (cancel instead, which cancels its bookings with
+  `departure_cancelled`).
 - TourPackage: duration_days >= 1; description at most 2,000 characters; price per traveller
   (A15); delete refused while any departure has bookings (deactivate instead).
-- Booking: seats > 0; unique idempotency_key per traveller; a `partner` user's bookings carry
+- Booking: seats > 0 and at most remaining at write time under a row lock; unique
+  idempotency_key per caller; a `partner` user's bookings carry
   its partner_id and are the only ones it can read.
 - Location: unique (name, country_code); latitude in [-90, 90], longitude in [-180, 180];
   timezone must be a valid IANA name, derived from the coordinates with an offline lookup when

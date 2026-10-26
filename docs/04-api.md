@@ -51,7 +51,8 @@ packages whose destinations' forecast average is above a threshold.
 |---|---|---|
 | POST | `/bookings` | `departure_id, traveller_id, seats`, header `Idempotency-Key`; 201 or 409 when sold out; partner_id from the token |
 | GET | `/bookings/{id}` | |
-| POST | `/bookings/{id}/cancel` | |
+| POST | `/bookings/{id}/cancel` | Idempotent; frees the seats, keeps the record |
+| POST | `/packages/{id}/departures/{dep}/cancel` | `ops`; refused as delete when bookings exist, cancels them with reason `departure_cancelled` (P3) |
 
 ## Operations
 
