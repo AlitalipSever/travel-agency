@@ -1,10 +1,8 @@
 # 01 Requirements
 
-Status: draft, 2026-10-26. This file holds the brief, the writing rules, the index of all
-requirement ids, the assumptions that close the brief's gaps, the deliberate exclusions and the
-questions for the client. The requirements themselves are in
-[01a (functional)](01a-requirements-functional.md) and
-[01b (quality and facts)](01b-requirements-quality-and-facts.md).
+Status: draft, 2026-10-26. The brief, the writing rules, the requirements (W weather, L
+locations, P packages, N non functional, F facts), the assumptions that close the brief's gaps,
+the deliberate exclusions and the questions for the client.
 
 ## 1. The brief in one paragraph
 
@@ -37,33 +35,201 @@ Template of one item:
 
 > **Id Short name.** The system shall ... Rationale: ... Acceptance: ... Satisfied by: ...
 
-Facts about the environment that shape the requirements are listed separately in 01b; they
+Facts about the environment that shape the requirements are listed separately in 2.5; they
 are constraints, not requirements. Non functional expectations (2.4) are measured by the
-quality scenarios in 02b §10.2.
+quality scenarios in 02 §10.2.
 
-### Index of requirements
+### 2.1 Weather
 
-| Id | Name | Where |
-|---|---|---|
-| W1 | Current weather | [01a](01a-requirements-functional.md) |
-| W2 | Daily forecast | [01a](01a-requirements-functional.md) |
-| W3 | Derived daily values | [01a](01a-requirements-functional.md) |
-| W4 | Independence from the upstream | [01a](01a-requirements-functional.md) |
-| L1 | Manageable location list | [01a](01a-requirements-functional.md) |
-| L2 | Initial data | [01a](01a-requirements-functional.md) |
-| L3 | Grouping by temperature | [01a](01a-requirements-functional.md) |
-| L4 | Bracket tuning | [01a](01a-requirements-functional.md) |
-| P1 | Package | [01a](01a-requirements-functional.md) |
-| P2 | Destination | [01a](01a-requirements-functional.md) |
-| P3 | Dated availability with capacity | [01a](01a-requirements-functional.md) |
-| P4 | Package danger | [01a](01a-requirements-functional.md) |
-| P5 | Bookable packages search | [01a](01a-requirements-functional.md) |
-| N1 | Architecture overview | [01b](01b-requirements-quality-and-facts.md) |
-| N2 | Clean data model | [01b](01b-requirements-quality-and-facts.md) |
-| N3 | Performance, stability, maintainability | [01b](01b-requirements-quality-and-facts.md) |
-| N4 | Extra features | [01b](01b-requirements-quality-and-facts.md) |
-| N5 | Production ready (our reading of the brief's goal line) | [01b](01b-requirements-quality-and-facts.md) |
-| F1 to F4 | Facts about the upstream and time zones | [01b](01b-requirements-quality-and-facts.md) |
+#### W1 Current weather
+
+- **Statement.** For a latitude and longitude, the system shall return the current temperature and condition, together with the time of observation and whether the value is live or stored.
+- **Rationale.** The brief asks for the current weather of a given location.
+- **Acceptance.**
+  1. Valid coordinates are answered within one second on a warm system.
+  2. Invalid coordinates (out of range, missing, not numeric) are rejected with a problem detail and no upstream call.
+  3. During an upstream outage the last known value is returned and marked as stored or stale; the endpoint never answers 5xx because of the upstream.
+- **Satisfied by.** ADR 0005 (cache, stale fallback); 04-api §Weather; tests in `weather/tests/`.
+
+#### W2 Daily forecast
+
+- **Statement.** For a latitude and longitude, the system shall return a forecast for the next five days, each day with an average temperature and a condition label.
+- **Rationale.** The brief asks for a five day forecast with average temperature and condition.
+- **Acceptance.**
+  1. Five days are returned, starting tomorrow in the location's local calendar; today is returned as a separate item.
+  2. Each day's values are computed from every slot that falls on that local day; a day with incomplete data is marked as partial and states how many samples it used.
+  3. The response states the time zone used and when the data was obtained.
+  4. For a known location, today is complete once the system has run for a day (F1, ADR 0012).
+- **Satisfied by.** ADR 0012 (persisted samples), ADR 0013 (summary rules, time); A11, A12, A13; 04-api §Weather.
+
+#### W3 Derived daily values
+
+- **Statement.** The system shall derive daily temperature values and a daily condition itself from the slot data the upstream provides.
+- **Rationale.** F1: the free tier has no daily endpoint; the brief wants daily values anyway.
+- **Acceptance.**
+  1. Daily temperature is reported as average, minimum and maximum over the day's slots.
+  2. The daily condition is chosen from the daytime slots; significant weather (thunderstorm, rain, snow, fog) takes precedence over cloudy and clear; otherwise the most frequent wins.
+  3. Upstream condition codes map to a closed set of labels; unknown codes map to a defined fallback, never to an error.
+  4. A table test fixes the rules and their edge cases: no daytime slot, a daylight saving day with 7 or 9 slots, ties.
+- **Satisfied by.** ADR 0013; A12.
+
+#### W4 Independence from the upstream
+
+- **Statement.** The system shall stay responsive and inside the upstream's usage limits regardless of the upstream's latency, availability or the number of locations.
+- **Rationale.** F2 and F3: the upstream is rate limited and outside our control; the brief asks for performance and stability.
+- **Acceptance.**
+  1. No request for a known location waits on the upstream.
+  2. Upstream calls per minute stay below the limit at the configured refresh rate and location count; the budget used is observable.
+  3. An upstream outage produces no 5xx from the weather endpoints and is visible in the operations status.
+  4. Repeated upstream failures stop further calls for a cooling period and resume automatically.
+- **Satisfied by.** ADR 0005 (scheduled refresh, cache, circuit breaker), ADR 0012; 06-operations.
+
+### 2.2 Locations and temperature brackets
+
+#### L1 Manageable location list
+
+- **Statement.** Operations shall create, read, update and delete locations (name, country, coordinates, time zone) without developer help.
+- **Rationale.** The brief: "the list of locations should be manageable".
+- **Acceptance.**
+  1. All four operations are available through the API to the `ops` role and through the admin.
+  2. Coordinates and time zone are validated on write (ranges, valid IANA name).
+  3. A deleted location disappears from listings and brackets but keeps its history and its weather samples.
+- **Satisfied by.** ADR 0001 (Django admin and DRF); 04-api §Locations; 00-domain §5 (roles).
+
+#### L2 Initial data
+
+- **Statement.** A fresh installation shall contain the capitals of South America as locations.
+- **Rationale.** The brief: the list is initially filled with the capitals of South America.
+- **Acceptance.**
+  1. After migrations and seed, the capitals are listed with coordinates and IANA time zones.
+  2. The Bolivia choice (Sucre, with La Paz as a second location) and the French Guiana choice are documented (A5).
+  3. Running the seed twice changes nothing.
+- **Satisfied by.** 03-data-model §Seed data; A5.
+
+#### L3 Grouping by temperature
+
+- **Statement.** The system shall return the locations grouped by their current temperature bracket, stating the bracket edges used and when the temperatures were read.
+- **Rationale.** The brief asks for the list grouped by temperature bracket.
+- **Acceptance.**
+  1. Every active location appears in exactly one bracket.
+  2. The response carries the edges, the mode used and the refresh time of the temperatures.
+  3. Serving the response triggers no upstream call.
+- **Satisfied by.** ADR 0004 (brackets), ADR 0005 (refresh); 04-api §Locations.
+
+#### L4 Bracket tuning
+
+- **Statement.** Bracket edges shall be adjustable so that the distribution is reasonable and, when wanted, no bracket is empty.
+- **Rationale.** The brief: "feel free to tweak the temperature ranges so each bracket has at least one location".
+- **Acceptance.**
+  1. Edges are configurable by operations and validated (ascending, no gaps).
+  2. A mode exists that guarantees non empty brackets by deriving edges from the data.
+  3. In fixed mode an empty bracket is returned empty, never hidden (A4).
+- **Satisfied by.** ADR 0004; A4.
+
+### 2.3 Tour packages
+
+#### P1 Package
+
+- **Statement.** The system shall store tour packages with name, price, description, duration and a set of destinations.
+- **Rationale.** The brief lists name, price, description and destinations; duration is added by A10 so that an end date exists.
+- **Acceptance.**
+  1. CRUD by the `ops` role through API and admin.
+  2. Price is a decimal with an ISO currency code, never a float (A7).
+  3. A package without destinations can be saved as a draft but is never bookable.
+- **Satisfied by.** 03-data-model; A7, A10; 04-api §Catalogue.
+
+#### P2 Destination
+
+- **Statement.** The system shall store destinations, each linked to one location, with a type and a danger score.
+- **Rationale.** The brief: destinations link to a location, have a type and a danger score.
+- **Acceptance.**
+  1. Danger is an integer on the fixed scale 0 to 3 (A6); other values are rejected.
+  2. A destination may belong to several packages; a location may have several destinations.
+  3. Type is a closed set that operations can extend without a deployment.
+- **Satisfied by.** ADR 0003; 03-data-model; A6.
+
+#### P3 Dated availability with capacity
+
+- **Statement.** A package shall be offered on several dates, each with its own capacity, and the system shall never sell more seats than a date has.
+- **Rationale.** The brief: multiple dates and limited capacity; A2 places the capacity on the date, A3 defines bookable.
+- **Acceptance.**
+  1. Each departure shows its capacity and remaining seats.
+  2. Two concurrent bookings of the last seat yield exactly one success and one conflict response.
+  3. A retried booking request with the same idempotency key does not book twice.
+  4. A cancelled booking frees its seats and remains on record.
+- **Satisfied by.** ADR 0002 (departure, row lock, idempotency); 04-api §Bookings.
+
+#### P4 Package danger
+
+- **Statement.** A package's danger score shall equal the highest danger score among its destinations at all times.
+- **Rationale.** The brief: the danger score of a package is the greatest one of its destinations.
+- **Acceptance.**
+  1. Changing a destination's danger changes every package containing it on the next read; no stale value is served.
+  2. A package's danger is part of its API representation.
+- **Satisfied by.** ADR 0003 (derived in the query).
+
+#### P5 Bookable packages search
+
+- **Statement.** Given two dates and a danger score, the system shall return the bookable packages with their data.
+- **Rationale.** The brief's required endpoint; A1 (at most), A3 (bookable), A10 (departure date) resolve its open readings.
+- **Acceptance.**
+  1. A package is returned when at least one of its departures starts inside the inclusive range, lies in the future and has seats left, and the package's danger does not exceed the given score.
+  2. Exact danger match is available on request.
+  3. Each result carries the package data and the matching departures with start date, end date and remaining seats.
+  4. Results are paginated and the query stays index backed as data grows (EXPLAIN documented).
+- **Satisfied by.** ADR 0002, 0003, 0011; A1, A3, A10; 04-api §Bookable search.
+
+### 2.4 Non functional requirements
+
+#### N1 Architecture overview
+
+- **Statement.** A concise architecture overview aligned with a Python, Django, PostgreSQL, Redis and cloud stack shall describe data flow, structure and the main design choices.
+- **Rationale.** The brief's first deliverable.
+- **Acceptance.**
+  1. arc42 sections 1 to 12 present (arc42-checklist.md), C4 context and container diagrams, every significant choice in an ADR.
+- **Satisfied by.** 02-architecture, adr/.
+
+#### N2 Clean data model
+
+- **Statement.** The data model shall be readable in one sitting, with explicit constraints and no duplicated derived values without a stated reason.
+- **Rationale.** The brief: "model the data in a clean and professional way".
+- **Acceptance.**
+  1. ER diagram, constraints and indexes documented; derived values (package danger, remaining seats, end date) computed, not stored, unless an ADR says otherwise.
+- **Satisfied by.** 03-data-model; ADR 0002, 0003, 0011.
+
+#### N3 Performance, stability, maintainability
+
+- **Statement.** The system shall meet the quality scenarios defined for it and follow the structure rules of the repository.
+- **Rationale.** The brief names the three words; scenarios make them measurable.
+- **Acceptance.**
+  1. Quality scenarios Q1 to Q7 in 02 §10.2 pass (latency unchanged in an upstream outage, zero overbookings, zero failed requests during a deploy, restore under 30 minutes, bounded change effort).
+  2. Files under 200 lines, thin views, services per app, tests at the seams (AGENTS.md).
+- **Satisfied by.** 02 §10.2; AGENTS.md; CI.
+
+#### N4 Extra features
+
+- **Statement.** Extra features and filters that add value for the client shall be proposed and, where the effort is small, implemented.
+- **Rationale.** The brief's third deliverable.
+- **Acceptance.**
+  1. Every proposed extra is tied to a job of an actor in 00-domain §3.
+  2. Implemented extras are tested and documented like the required features; proposed ones state what they would take.
+- **Satisfied by.** 04-api (extras); 07-roadmap.
+
+#### N5 Production ready (our reading of the brief's goal line)
+
+- **Statement.** The system shall run for real, with deployment, rollback, backups, health checks and secret handling in place.
+- **Rationale.** The brief's goal line says production ready; we read it as running in production, and mark that as our reading.
+- **Acceptance.**
+  1. A public URL serves the API and the site over HTTPS.
+  2. Deploy and rollback are single commands; a restore drill has been run; secrets are not in git.
+- **Satisfied by.** ADR 0006, 0007, 0009; 06-operations.
+
+### 2.5 Facts about the environment (constraints, not requirements)
+
+- **F1** The free tier forecast endpoint returns 40 three hour slots from the next full slot after now, plus one current observation. No daily endpoint, no history, nothing beyond 120 hours. One Call 3.0 offers daily values but needs a paid subscription; the brief says free tier only.
+- **F2** The free tier allows 60 calls per minute and about one million per month.
+- **F3** The upstream is outside our control: it may be slow, down or rate limiting.
+- **F4** Slot timestamps are UTC; the forecast response carries the location's offset. Chile and Paraguay observe daylight saving time; most other South American countries do not.
 
 ## 3. Assumptions (gaps in the brief, how we fill them)
 

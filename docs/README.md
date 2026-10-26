@@ -3,11 +3,8 @@
 | Document | What it answers |
 |---|---|
 | [00-domain.md](00-domain.md) | Who the system is for: stakeholder map, actors and their jobs, ubiquitous language, roles and permissions, domain events, questions for the client |
-| [01-requirements.md](01-requirements.md) | The brief, the writing rules, the index of requirement ids, assumptions, exclusions, questions for the client |
-| [01a-requirements-functional.md](01a-requirements-functional.md) | Functional requirements W, L, P: statement, rationale, acceptance, satisfied by |
-| [01b-requirements-quality-and-facts.md](01b-requirements-quality-and-facts.md) | Non functional requirements N and the facts F about the upstream and time zones |
-| [02-architecture.md](02-architecture.md) | How the system is built: arc42 sections 1 to 9, C4 diagrams, containers, data flow |
-| [02b-quality-risks-glossary.md](02b-quality-risks-glossary.md) | arc42 sections 10 to 12: quality scenarios, risks, technical glossary |
+| [01-requirements.md](01-requirements.md) | The brief, the writing rules, every requirement with acceptance checks, assumptions, exclusions, questions for the client |
+| [02-architecture.md](02-architecture.md) | How the system is built: arc42 sections 1 to 12, C4 diagrams, containers, data flow, quality, risks |
 | [arc42-checklist.md](arc42-checklist.md) | Every official arc42 subsection, where it lives in 02 and its status |
 | [adr/](adr/README.md) | Each significant decision with its context, options and consequences |
 | [03-data-model.md](03-data-model.md) | Entities, relations, derived values, indexes |

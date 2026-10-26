@@ -17,8 +17,9 @@ source of truth for scope; assumptions that fill its gaps are listed there and d
   where they describe architecture and the ADR template in docs/adr/0000-template.md.
 - Every architectural choice gets an ADR before or with the code that implements it. An ADR is
   never edited after acceptance; a new one supersedes it.
-- Files stay under 200 lines; split by responsibility (Django apps, Next.js components, chart
-  templates). Generated files are exempt.
+- Code files stay under 200 lines; split by responsibility (Django apps, Next.js components,
+  chart templates). Generated files are exempt. Documents under `docs/` are exempt: one topic,
+  one file, however long; propose a split only when a document really covers two topics.
 - Secrets never enter the repo: no API keys, tokens, passwords, kubeconfigs. `.env.example`
   documents the names only.
 - Python: Django + Django REST Framework, Celery, pytest, ruff. Views stay thin; domain logic
