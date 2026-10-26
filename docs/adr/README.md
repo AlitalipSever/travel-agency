@@ -9,7 +9,7 @@ supersedes an earlier one. Status: proposed, accepted, superseded, rejected.
 | [0002](0002-departure-capacity.md) | Capacity belongs to a departure date, bookings take a row lock | proposed |
 | [0003](0003-danger-score.md) | Danger score scale, "at most" semantics, derived in the query | proposed |
 | [0004](0004-temperature-brackets.md) | Temperature brackets are configurable fixed edges, quantile mode optional | proposed |
-| [0005](0005-weather-cache-and-refresh.md) | Weather is cached in Redis and refreshed by a scheduled job, with stale fallback | proposed |
+| [0005](0005-weather-cache-and-refresh.md) | Known locations refreshed by a scheduled job into PostgreSQL; Redis for ad hoc coordinates; stale fallback | proposed |
 | [0006](0006-k3s-on-hetzner.md) | Deploy on k3s on one Hetzner server with one Helm chart; cloud independence over managed services | proposed |
 | [0007](0007-postgres-operator.md) | PostgreSQL through the CloudNativePG operator | proposed |
 | [0008](0008-no-event-streaming-yet.md) | No event streaming (Kafka) in this iteration | proposed |

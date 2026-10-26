@@ -79,9 +79,9 @@ C4Context
 
 ## 4. Solution strategy
 
-- Weather is read through one adapter with a cache in front (Redis). Requests never fan out to
-  the upstream on the hot path for known locations; a scheduled job refreshes them and persists
-  what it fetches (ADR 0005, 0012); daily summaries follow ADR 0013.
+- Weather comes through one adapter. Known locations are refreshed by a scheduled job into
+  PostgreSQL and read from there; ad hoc coordinates are fetched on miss and cached briefly in
+  Redis (ADR 0005, 0012); daily summaries follow ADR 0013.
 - The product model separates the catalogue (package, destination) from the sellable unit
   (departure: package + date + capacity). Bookings reduce remaining seats under a row lock
   (ADR 0002).
@@ -101,14 +101,14 @@ C4Container
   Container(worker, "worker", "Celery", "Weather refresh, sample persistence, bracket computation")
   Container(beat, "beat", "Celery beat", "Schedules the refresh")
   ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, weather samples, audit")
-  ContainerDb(redis, "Redis", "", "Weather cache, Celery broker")
+  ContainerDb(redis, "Redis", "", "Ad hoc weather cache, Celery broker")
   System_Ext(owm, "OpenWeatherMap", "")
   Rel(web, api, "HTTPS /api")
   Rel(api, pg, "SQL")
-  Rel(api, redis, "cache read")
+  Rel(api, redis, "ad hoc cache")
+  Rel(api, owm, "HTTPS, ad hoc only")
   Rel(worker, owm, "HTTPS")
-  Rel(worker, redis, "cache write")
-  Rel(worker, pg, "SQL")
+  Rel(worker, pg, "SQL, samples")
   Rel(beat, redis, "enqueue")
 ```
 
@@ -125,9 +125,10 @@ the code exists.
 
 `TODO (arc42 6)`: sequence diagrams once the code exists, one per scenario:
 
-- R1 Current weather request: cache hit, cache miss, stale fallback.
-- R2 Scheduled refresh of all locations: fetch, upsert weather samples, write cache; rate
-  limit budget, partial failure.
+- R1 Current weather request: known location from samples; ad hoc coordinate cache hit,
+  miss, stale fallback, 503 when nothing is stored.
+- R2 Scheduled refresh of all locations (and the immediate refresh on create): fetch, upsert
+  weather samples; rate limit budget, partial failure.
 - R3 Bookable packages query (date range on the departure date, ADR 0011).
 - R4 Booking under concurrency (two clients, one seat left).
 

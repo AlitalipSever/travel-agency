@@ -64,14 +64,25 @@ quality scenarios in 02 §10.2.
 
 #### W2 Daily forecast
 
-- **Statement.** For a latitude and longitude, the system shall return a forecast for the next five days, each day with an average temperature and a condition label.
-- **Rationale.** The brief asks for a five day forecast with average temperature and condition.
+- **Statement.** For a latitude and longitude, the system shall return a forecast for the next
+  five days, each day with average, minimum and maximum temperature (degrees Celsius) and a
+  condition label from the closed set of W3.
+- **Rationale.** The brief asks for a five day forecast with average temperature and
+  condition; minimum and maximum follow common practice (ADR 0013).
 - **Acceptance.**
-  1. Five days are returned, starting tomorrow in the location's local calendar; today is returned as a separate item.
-  2. Each day's values are computed from every slot that falls on that local day; a day with incomplete data is marked as partial and states how many samples it used.
-  3. The response states the time zone used and when the data was obtained.
-  4. For a known location, today is complete once the system has run for a day (F1, ADR 0012).
-- **Satisfied by.** ADR 0012 (persisted samples), ADR 0013 (summary rules, time); A11, A12, A13; 04-api §Weather.
+  1. Five days are returned, starting tomorrow in the location's local calendar; today is
+     reported separately from the five.
+  2. A slot belongs to the local day in which it starts; each day's values are computed from
+     all slots of that day.
+  3. A day is marked partial when any of its slots is missing (today's past hours for an ad
+     hoc coordinate, the last day cut by the 120 hour window, a gap in the upstream data) and
+     states how many observed and forecast samples it used.
+  4. For a known location, today is not partial once samples exist for all of its past slots
+     (ADR 0012). A location added during the day stays partial until the next local day; an
+     ad hoc coordinate is always partial for today.
+  5. The response states the time zone used and when the data was obtained.
+  6. Latency, invalid input and upstream unavailability behave as in W1 (1 to 5).
+- **Satisfied by.** ADR 0012, ADR 0013; A11, A12, A13, A14; 04-api §Weather.
 
 #### W3 Derived daily values
 
@@ -105,6 +116,7 @@ quality scenarios in 02 §10.2.
   1. All four operations are available through the API to the `ops` role and through the admin.
   2. Coordinates and time zone are validated on write (ranges, valid IANA name).
   3. A deleted location disappears from listings and brackets but keeps its history and its weather samples.
+  4. A newly created location has current weather and forecast data within one minute, without waiting for the next scheduled refresh.
 - **Satisfied by.** ADR 0001 (Django admin and DRF); 04-api §Locations; 00-domain §5 (roles).
 
 #### L2 Initial data

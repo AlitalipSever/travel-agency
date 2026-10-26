@@ -31,8 +31,11 @@ observation` keeps the schema small; a unique key on (location, slot_time, kind)
 fetch. The daily summary (ADR 0013) reads samples for the local calendar day, so today is
 complete once the system has run for a day, and past days become comparable ("same day last
 week"). Ad hoc coordinates (requests with arbitrary latitude and longitude) are not persisted;
-they keep the cache only path and their today is marked partial. Redis stays as the hot cache
-in front of the API; the table is the record behind the worker.
+they keep the cache only path and their today is marked partial. The table is both the record
+and what the API reads for known locations; Redis caches only ad hoc coordinates (ADR 0005).
+"Known" and "ad hoc" are not two code paths but one path with different amounts of stored
+data: a location created an hour ago behaves like an ad hoc coordinate for today and like a
+known location from the next local day.
 
 ## Consequences
 

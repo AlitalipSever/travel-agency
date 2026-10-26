@@ -72,8 +72,8 @@ Weather is not part of the catalogue, but what the worker fetches for known loca
 (ADR 0012): `WeatherSample(location_id, slot_time timestamptz, kind forecast|observation,
 fetched_at, temp, temp_min, temp_max, condition_code, condition_label, pop, raw jsonb)`,
 unique on (location_id, slot_time, kind), upserted on every fetch so the newest forecast wins
-and an observation supersedes the forecast of its hour. Pruned after 90 days. Ad hoc
-coordinates are served from Redis only. All timestamps are UTC; local days are computed with
+and an observation supersedes the forecast of its hour. Pruned after 90 days. The API reads these
+samples for known locations; ad hoc coordinates are served from Redis only. All timestamps are UTC; local days are computed with
 the location's IANA zone (ADR 0013).
 
 ## Derived values

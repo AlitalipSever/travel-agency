@@ -28,7 +28,8 @@ priority thunderstorm > rain > snow > fog > cloudy > clear, most frequent when n
 weather occurs; upstream condition codes map to this closed set of labels.
 Day boundary (c): every timestamp is stored in UTC (`timestamptz`); each known location carries
 an IANA zone name (`America/Santiago`); summaries convert samples to the local calendar day in
-code; the response states the zone and the local date. Ad hoc coordinates use the offset the
+code, a slot belonging to the day in which it starts; the response states the zone and the
+local date. Ad hoc coordinates use the offset the
 upstream returns with the forecast, which is correct for the day of the request.
 
 ## Consequences
