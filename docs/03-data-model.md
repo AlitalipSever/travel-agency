@@ -149,7 +149,8 @@ Two more tables without relations worth drawing:
   (L4.2).
 
 Users are Django's auth user with two added columns (`role`, `partner_id`) as the custom user
-model; tokens are DRF tokens, one per user. The `demo` partner is a `Partner` row with
+model; tokens are DRF tokens, one per user. `Partner` and `User` live in the `core` app (the
+user points at the partner; booking references both, never the reverse, 02 §5.2). The `demo` partner is a `Partner` row with
 `is_demo = true` and one user of role `partner`.
 
 ## Derived values (never stored)
