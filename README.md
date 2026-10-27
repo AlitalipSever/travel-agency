@@ -29,6 +29,8 @@ Then:
 
 Every API call needs `Authorization: Token <value>`; `make demo` prints one token per role
 (`demo-ops`, `demo-sales`, `demo-partner`, `demo-finance`). Every role reads; only `ops` writes.
+In Swagger UI click **Authorize** and enter the whole header value, `Token <value>`, with the
+word `Token` and a space in front of the key.
 
 ## Try the brief's three parts
 
