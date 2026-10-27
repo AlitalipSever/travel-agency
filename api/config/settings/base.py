@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "core",
+    "weather",
 ]
 
 MIDDLEWARE = [
@@ -116,9 +117,20 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
+# Weather upstream (F1 to F3, ADR 0005). An empty key selects the fixture-backed mock client.
+OPENWEATHER_API_KEY = env("OPENWEATHER_API_KEY", default="")
+OPENWEATHER_BASE_URL = env("OPENWEATHER_BASE_URL", default="https://api.openweathermap.org")
+OPENWEATHER_TIMEOUT_S = env.float("OPENWEATHER_TIMEOUT_S", default=5.0)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": env("DJANGO_LOG_LEVEL", default="INFO")},
+    # HTTP client libraries log full request URLs at INFO, query string included: never below
+    # WARNING, or the upstream API key would land in the logs (N6.3).
+    "loggers": {
+        "httpx": {"level": "WARNING"},
+        "httpcore": {"level": "WARNING"},
+    },
 }
