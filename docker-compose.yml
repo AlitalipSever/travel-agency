@@ -1,0 +1,70 @@
+# Local development stack (L1, docs/06-operations.md §1).
+# One command: make up. The api runs Django's reloading server against the bind-mounted code;
+# the same image serves gunicorn in production (api/Dockerfile).
+
+name: travel-agency
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: travel
+      POSTGRES_PASSWORD: travel
+      POSTGRES_DB: travel
+    ports:
+      - "5432:5432"            # also lets `uv run pytest` on the laptop reach it
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel -d travel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./api
+      args: {INSTALL_DEV: "1"}
+    image: travel-agency-api:dev
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    env_file: api/.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://travel:travel@postgres:5432/travel
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: ./api
+      args: {INSTALL_DEV: "1"}
+    image: travel-agency-api:dev
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    env_file: api/.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://travel:travel@postgres:5432/travel
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./api:/app              # live code; the environment is /opt/venv in the image
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

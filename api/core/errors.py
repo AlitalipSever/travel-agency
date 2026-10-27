@@ -145,9 +145,10 @@ def problem_exception_handler(exc: Exception, context: dict[str, Any]) -> Respon
     elif isinstance(exc, DjangoPermissionDenied):
         exc = exceptions.PermissionDenied()
 
-    response = drf_exception_handler(exc, context)
-    if response is None:  # not an API exception: let Django produce the 500 (handler500)
+    drf_response = drf_exception_handler(exc, context)
+    if drf_response is None:  # not an API exception: let Django produce the 500 (handler500)
         return None
+    response = drf_response
 
     assert isinstance(exc, exceptions.APIException)
     type_, title = _DRF_TYPES.get(type(exc), (ProblemType.INTERNAL, "Error"))

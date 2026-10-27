@@ -10,24 +10,30 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /uvx /bin/
 
+# INSTALL_DEV=1 adds pytest, ruff and mypy (docker compose and CI); production builds leave it 0.
+ARG INSTALL_DEV=0
+
+# The environment lives outside /app so that compose can bind-mount the code over /app.
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_PYTHON_DOWNLOADS=never
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
 
 WORKDIR /app
 
 # Dependencies first, so a code change does not reinstall them (layer cache).
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
+    if [ "$INSTALL_DEV" = "1" ]; then uv sync --frozen --no-install-project; \
+    else uv sync --frozen --no-dev --no-install-project; fi
 
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    if [ "$INSTALL_DEV" = "1" ]; then uv sync --frozen; else uv sync --frozen --no-dev; fi
 
 # Admin and Swagger assets; a throwaway secret, no database needed for collectstatic.
 RUN DJANGO_SECRET_KEY=build DATABASE_URL=postgres://x:x@x/x DJANGO_SETTINGS_MODULE=config.settings.production \
-    /app/.venv/bin/python manage.py collectstatic --noinput
+    /opt/venv/bin/python manage.py collectstatic --noinput
 
 # ---------- runtime ----------
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
@@ -40,10 +46,11 @@ RUN apt-get update \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:$PATH" \
+    PATH="/opt/venv/bin:$PATH" \
     DJANGO_SETTINGS_MODULE=config.settings.production
 
 WORKDIR /app
+COPY --from=builder --chown=app:app /opt/venv /opt/venv
 COPY --from=builder --chown=app:app /app /app
 
 USER app

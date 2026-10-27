@@ -38,6 +38,10 @@ strict = false
 warn_unused_ignores = true
 plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 
+[[tool.mypy.overrides]]
+module = ["environ", "environ.*"]
+ignore_missing_imports = true  # django-environ ships no type information
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 
