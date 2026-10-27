@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs ps build migrate makemigrations test test-fast lint fmt shell superuser psql env
+.PHONY: help up down logs worker-logs refresh ps build migrate makemigrations test test-fast lint fmt shell superuser psql env
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -22,6 +22,12 @@ down:            ## stop everything, keep data
 
 logs:            ## follow api logs
 	$(COMPOSE) logs -f api
+
+worker-logs:     ## follow worker and beat logs
+	$(COMPOSE) logs -f worker beat
+
+refresh:         ## run one weather refresh now (through the worker queue)
+	$(API_DB) python manage.py shell -c "from weather.tasks import refresh_all; print('queued', refresh_all.delay('manual').id)"
 
 ps:              ## running services
 	$(COMPOSE) ps

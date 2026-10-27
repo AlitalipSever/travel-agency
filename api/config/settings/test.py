@@ -19,3 +19,7 @@ WHITENOISE_AUTOREFRESH = True
 
 # Tests never call the real upstream; the mock client serves recorded fixtures.
 OPENWEATHER_API_KEY = ""
+
+# Tasks run inline in tests; no worker, no broker round trip.
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True

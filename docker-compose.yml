@@ -66,5 +66,37 @@ services:
       redis:
         condition: service_healthy
 
+  worker:
+    image: travel-agency-api:dev
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "2"]
+    env_file: api/.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://travel:travel@postgres:5432/travel
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./api:/app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  beat:
+    image: travel-agency-api:dev
+    command: ["celery", "-A", "config", "beat", "-l", "info"]
+    env_file: api/.env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://travel:travel@postgres:5432/travel
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./api:/app
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:

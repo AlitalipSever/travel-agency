@@ -133,6 +133,28 @@ BREAKER_COOLDOWN_S = env.int("BREAKER_COOLDOWN_S", default=60)
 # Redis: ad hoc weather cache, budget and breaker state, Celery broker (ADR 0005).
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
+# Celery (02 §8.4): idempotent tasks, late acks, hard time limits, schedule in code.
+REFRESH_INTERVAL_S = env.int("REFRESH_INTERVAL_S", default=900)
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_TIME_LIMIT = 20 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 18 * 60
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
+    "weather-refresh-all": {
+        "task": "weather.tasks.refresh_all",
+        "schedule": REFRESH_INTERVAL_S,
+        "kwargs": {"trigger": "scheduled"},
+    },
+    "weather-prune-samples": {
+        "task": "weather.tasks.prune_samples",
+        "schedule": 24 * 3600,  # daily; beat starts the clock when it starts
+    },
+}
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
