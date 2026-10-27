@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env
+.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -67,3 +67,12 @@ superuser:       ## create an admin user (ops) interactively
 
 psql:            ## psql into the compose database
 	$(COMPOSE) exec postgres psql -U travel -d travel
+
+web-dev:         ## run the site with hot reload on http://localhost:3000 (needs pnpm)
+	cd web && pnpm install && pnpm dev
+
+web-build:       ## production build of the site
+	cd web && pnpm install && pnpm build
+
+web-lint:        ## eslint + type check of the site
+	cd web && pnpm lint && pnpm exec tsc --noEmit

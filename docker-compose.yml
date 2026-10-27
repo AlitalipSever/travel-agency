@@ -100,5 +100,17 @@ services:
       redis:
         condition: service_healthy
 
+  web:
+    build:
+      context: ./web
+    image: travel-agency-web:dev
+    env_file: api/.env
+    environment:
+      API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
