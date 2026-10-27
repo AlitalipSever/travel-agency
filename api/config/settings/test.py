@@ -12,3 +12,7 @@ ALLOWED_HOSTS = ["testserver", "localhost"]
 
 # Fast password hashing in tests only; never in production.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+# No collected static files in tests.
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True

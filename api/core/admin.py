@@ -9,11 +9,11 @@ from .models import Partner, Setting, User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = (
-        *DjangoUserAdmin.fieldsets,
+        *(DjangoUserAdmin.fieldsets or ()),
         ("Travel agency", {"fields": ("role", "partner")}),
     )
     add_fieldsets = (
-        *DjangoUserAdmin.add_fieldsets,
+        *(DjangoUserAdmin.add_fieldsets or ()),
         ("Travel agency", {"fields": ("role", "partner")}),
     )
     list_display = ("username", "role", "partner", "is_active", "is_staff")

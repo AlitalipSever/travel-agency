@@ -15,3 +15,7 @@ REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [  # noqa: F405
     "rest_framework.renderers.JSONRenderer",
     "rest_framework.renderers.BrowsableAPIRenderer",
 ]
+
+# Static files straight from the apps; no collectstatic on a laptop or in compose.
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
