@@ -16,7 +16,7 @@ row per official subsection; the status column is updated with every change to
 | 4 Solution strategy | Fundamental decisions and why | 02 §4 | done |
 | 5.1 Building blocks level 1 | Whitebox overview + blackbox table (purpose, interfaces) | 02 §5.1 | done |
 | 5.2 Building blocks level 2 | Zoom into selected blocks | 02 §5.2 | done from design; verify against code |
-| 6 Runtime view | Sequence per important scenario | 02 §6 | partial (data flows drawn, sequences after code) |
+| 6 Runtime view | Sequence per important scenario | 02 §6 | done from design (R1, R2, R4, R5 drawn; R3 as flow); verify against code |
 | 7 Deployment view | Infrastructure, mapping of blocks to nodes | 02 §7 | partial (sizing and pod mapping) |
 | 8 Crosscutting concepts | Selected system-wide concepts | 02 §8 | done |
 | 9 Architecture decisions | ADRs | adr/ | done (14 accepted 2026-10-27) |

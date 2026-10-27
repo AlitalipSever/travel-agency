@@ -300,6 +300,9 @@ flowchart LR
   end
 ```
 
+The ad hoc path also carries the stale fallback, the 503 when nothing is stored and the circuit
+breaker; R1 below shows them.
+
 ```mermaid
 flowchart LR
   req["GET /packages/bookable?from&to&danger"] --> val["validate inputs"]
@@ -309,16 +312,127 @@ flowchart LR
   order --> resp["packages with matching departures,<br/>ends_on and remaining seats"]
 ```
 
-### 6.2 Scenarios
+### 6.2 Scenarios (from the design; verify against the code)
 
-`TODO (arc42 6)`: sequence diagrams once the code exists, one per scenario:
+Sequence diagrams for the behaviours the requirements pin down. Each names its acceptance
+checks so a test can be written from it.
 
-- R1 Current weather request: known location from samples; ad hoc coordinate cache hit,
-  miss, stale fallback, 503 when nothing is stored.
-- R2 Scheduled refresh of all locations (and the immediate refresh on create): fetch, upsert
-  weather samples; rate limit budget, partial failure.
-- R3 Bookable packages query (date range on the departure date, ADR 0011).
-- R4 Booking under concurrency (two clients, one seat left).
+**R1 Current weather for an ad hoc coordinate** (W1.2, W1.4, W1.5, W4.6)
+
+```mermaid
+sequenceDiagram
+  participant C as Caller
+  participant A as api
+  participant R as Redis
+  participant B as breaker and budget
+  participant O as OpenWeatherMap
+  C->>A: GET /weather/current?lat&lon
+  A->>A: validate, round to 3 decimals
+  A->>R: get cached value
+  alt fresh value
+    R-->>A: value, age under TTL
+    A-->>C: 200 source=cached
+  else no value or expired
+    A->>B: may I call?
+    alt breaker closed and ad hoc share left
+      A->>O: current weather
+      alt upstream ok
+        O-->>A: observation
+        A->>R: set with TTL
+        A-->>C: 200 source=live
+      else upstream fails or times out
+        A->>B: record failure
+        alt expired value exists
+          A-->>C: 200 source=stale with age
+        else nothing stored
+          A-->>C: 503 problem detail, Retry-After
+        end
+      end
+    else breaker open or share exhausted
+      A-->>C: stale if stored, else 503 or 429 fast
+    end
+  end
+```
+
+Known locations skip the upstream entirely: the API reads the latest observation from
+`WeatherSample` (W1.1, W4.1).
+
+**R2 Scheduled refresh with budget and partial failure** (W4.2, W4.4, L1.5, ADR 0012)
+
+```mermaid
+sequenceDiagram
+  participant T as beat or create hook
+  participant Q as Redis queue
+  participant W as worker
+  participant B as budget
+  participant O as OpenWeatherMap
+  participant P as PostgreSQL
+  T->>Q: enqueue refresh(all) or refresh(location)
+  Q->>W: task
+  W->>P: active locations
+  W->>B: plan: 2 calls per location, spread over the interval, under the refresh share
+  loop each location, paced
+    W->>O: current + forecast
+    alt ok
+      O-->>W: observation + 40 slots
+      W->>P: upsert samples (newest wins, observation beats forecast)
+    else error for this location
+      W->>W: log, count failure, keep last samples, continue
+    end
+  end
+  W->>P: write run summary (calls used, failures, effective interval)
+```
+
+**R3 Bookable packages search** (P5): see the flow in 6.1; one query, validated inputs,
+stable order, only matching departures.
+
+**R4 Two bookings for the last seat, and an idempotent retry** (P6.1 to P6.3, ADR 0002)
+
+```mermaid
+sequenceDiagram
+  participant S1 as Sales A
+  participant S2 as Sales B
+  participant A as api
+  participant P as PostgreSQL
+  par two requests at once
+    S1->>A: POST /bookings seats=1 key=k1
+    S2->>A: POST /bookings seats=1 key=k2
+  end
+  A->>P: BEGIN, SELECT departure FOR UPDATE (request 1 wins the lock)
+  A->>P: remaining = capacity - confirmed seats
+  alt remaining >= seats
+    A->>P: INSERT booking (price and danger snapshot), COMMIT
+    A-->>S1: 201 booking
+  end
+  A->>P: BEGIN, SELECT departure FOR UPDATE (request 2 waits, then reads)
+  A->>P: remaining = 0
+  A-->>S2: 409 problem detail, remaining=0
+  S1->>A: POST /bookings seats=1 key=k1 (retry)
+  A->>P: find booking by caller + key
+  A-->>S1: 200 same booking, nothing new
+```
+
+**R5 Operations creates a location** (L1.2, L1.5, L3.2)
+
+```mermaid
+sequenceDiagram
+  participant Op as Operations
+  participant A as api or admin
+  participant P as PostgreSQL
+  participant Q as Redis queue
+  participant W as worker
+  Op->>A: create location (name, country, lat, lon, zone optional)
+  A->>A: validate ranges, unique name per country, derive zone if omitted
+  A->>P: INSERT location (history row by trigger)
+  A->>Q: enqueue refresh(location)
+  A-->>Op: 201 location
+  Q->>W: task
+  W->>P: upsert samples within a minute
+  Note over A,P: until then the brackets endpoint lists it under no data
+```
+
+Not drawn, covered by tests: departure cancel with bookings (P3.4), nightly demo reset and
+sample retention (06-operations), rolling deploy with the migrate job (Q4).
 
 ## 7. Deployment view
 
