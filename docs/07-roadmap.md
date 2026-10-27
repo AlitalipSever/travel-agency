@@ -16,7 +16,9 @@ acceptance checks pass in CI.
 | B3 Daily summary and forecast | 2026-10-27 (PR #4) | W2.1 to W2.6, W3.1 to W3.5; table tests for DST days, ties, no daytime slot, unmapped codes | Expected slots counted from aligned UTC slot starts (ADR 0013) |
 | B4 Locations | 2026-10-27 (PR #5) | L1.1 to L1.5, L2.1 to L2.4; 403 matrix for sales and partner | L1.6 attribution lands with B11 |
 | B5 Brackets | 2026-10-27 (PR #6) | L3.1 to L3.6, L4.1 to L4.5; latest observations in one query | Quantile mode rounds temperatures to one decimal so no bracket is empty |
-| B2 weather adapter | 2026-10-27 (PR #3) | W1.1 to W1.5, W4.1 to W4.7 as tests incl. timed checks; R1 and R2 with the mock upstream; live smoke test when a key is present | "Visible in the operations status" parts of W4.2 and W4.5 land with `/ops/status` (B12) |
+| B6 Catalogue | 2026-10-27 (PR #7) | P1.1 to P1.4, P2.1 to P2.5, P4.1 to P4.3; package list in three queries | Danger derived in the query (ADR 0003); write field is `destination_ids` |
+| B7 Departures | 2026-10-27 (PR #8) | P3.1 to P3.5, P1.6; cancel idempotent under the row lock | Booking tables created here (model only) so seats are real; rules and endpoints with B9 |
+| B8 Bookable search | 2026-10-27 (PR #9) | P5.1 to P5.5, N3.1 (five queries per page); P5.7 measured in `docs/plans/bookable.md` | One partial index took query 1 from 1,340 ms to 21 ms on 20,000 departures |
 
 ## 2. Deliberately left out
 
