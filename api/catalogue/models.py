@@ -191,7 +191,15 @@ class Departure(TimeStampedModel):
                 fields=["starts_on"],
                 condition=Q(status=DepartureStatus.PLANNED),
                 name="departure_planned_start_idx",
-            )
+            ),
+            # bookable search: the per-package probe "planned departure inside the range"
+            # (P5.7, docs/plans/bookable.md); without it the planner walks the date index
+            # and filters by package on every probe
+            models.Index(
+                fields=["package", "starts_on"],
+                condition=Q(status=DepartureStatus.PLANNED),
+                name="departure_pkg_planned_idx",
+            ),
         ]
 
     def __str__(self) -> str:

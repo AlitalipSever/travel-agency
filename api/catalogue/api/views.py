@@ -15,9 +15,10 @@ from rest_framework.response import Response
 
 from core.permissions import ReadAnyWriteOps
 
-from .. import services
+from .. import bookable, services
 from ..models import Departure, Destination, DestinationType, Package
 from .serializers import (
+    BookableResultSerializer,
     DepartureSerializer,
     DestinationSerializer,
     DestinationTypeSerializer,
@@ -167,6 +168,45 @@ class PackageViewSet(viewsets.ModelViewSet):
 
     def _fresh(self, package: Package) -> Package:
         return self.get_queryset().get(pk=package.pk)
+
+    @extend_schema(
+        summary="Bookable packages between two dates for a danger score (P5)",
+        description=(
+            "Active packages whose derived danger is at most (or exactly) the given score and "
+            "that have a planned departure starting inside the inclusive range, on or after "
+            "today in the agency's time zone, with seats left. Each result lists only the "
+            "departures that matched. Ordered by earliest matching departure, name, id."
+        ),
+        parameters=[
+            OpenApiParameter("from", str, required=True, description="YYYY-MM-DD"),
+            OpenApiParameter(
+                "to", str, required=True, description="YYYY-MM-DD, at most 366 days later"
+            ),
+            OpenApiParameter("danger", int, required=True, description="0 to 3"),
+            OpenApiParameter("danger_mode", str, description="at_most (default) or exact"),
+        ],
+        responses={200: BookableResultSerializer(many=True)},
+    )
+    @action(detail=False, methods=["get"], url_path="bookable")
+    def bookable(self, request: Request) -> Response:
+        try:
+            query = bookable.parse(dict(request.query_params.items()))
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict) from exc
+        qs = bookable.packages(query)
+        page = self.paginate_queryset(qs)
+        rows = page if page is not None else list(qs)
+        context = {
+            **self.get_serializer_context(),
+            "departures": bookable.departures_for([p.pk for p in rows], query),
+        }
+        data = BookableResultSerializer(rows, many=True, context=context).data
+        if page is not None:
+            response = self.get_paginated_response(data)
+        else:
+            response = Response({"count": len(data), "results": data})
+        response.data = {"query": query.as_dict(), **response.data}
+        return response
 
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         page = self.paginate_queryset(self.get_queryset())
