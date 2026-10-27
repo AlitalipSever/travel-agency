@@ -20,9 +20,9 @@ row per official subsection; the status column is updated with every change to
 | 7 Deployment view | Infrastructure, mapping of blocks to nodes | 02 §7 | done (infrastructure, mapping with resources, node and network, environments, delivery) |
 | 8 Crosscutting concepts | Selected system-wide concepts | 02 §8 | done |
 | 9 Architecture decisions | ADRs | adr/ | done (14 accepted 2026-10-27) |
-| 10.1 Quality overview | Quality tree or table | 02 §10.1 | todo |
-| 10.2 Quality scenarios | Usage and change scenarios with metrics | 02 §10.2 | done |
-| 11 Risks and technical debt | Prioritised table with measures | 02 §11 | done |
+| 10.1 Quality overview | Quality tree or table | 02 §10.1 | done |
+| 10.2 Quality scenarios | Usage and change scenarios with metrics | 02 §10.2 | done (Q1 to Q12) |
+| 11 Risks and technical debt | Prioritised table with measures | 02 §11 | done (10 rows) |
 | 12 Glossary | Term and definition table, lean | 02 §12 (technical), 00-domain §4 (business) | done |
 
 Related documents outside arc42: [00-domain.md](00-domain.md) (stakeholders, actors, jobs to be

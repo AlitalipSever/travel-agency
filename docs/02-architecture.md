@@ -605,46 +605,100 @@ where the rule is decided.
 
 ## 9. Architecture decisions
 
-See [adr/README.md](adr/README.md).
+Fourteen decisions, all accepted 2026-10-27, in [adr/README.md](adr/README.md). Grouped by the
+quality goal they serve:
+
+| Goal (§1.2) | Decisions |
+|---|---|
+| 1 Reliability toward the upstream | 0005 scheduled refresh into PostgreSQL, budget, breaker; 0012 persisted samples; 0013 daily summary and time rules |
+| 2 Correctness of the product model | 0002 departure and row lock; 0003 danger scale and derivation; 0011 date range on the departure |
+| 3 Operability | 0006 k3s on Hetzner with one chart; 0007 CloudNativePG; 0009 ghcr and multi-arch CI |
+| 4 Security | 0014 history by triggers (accountability); roles and partner scope in 00-domain §5 |
+| 5 Maintainability | 0001 Django and DRF; 0004 configurable brackets; 0008 no event streaming yet; 0010 arc42 and C4 |
 
 ## 10. Quality requirements
 
-### 10.1 Quality requirements overview
+### 10.1 Quality tree
 
-`TODO (arc42 10.1)`: quality tree from the four goals in 1.2 down to the scenarios in 10.2.
+From the goals of §1.2 through ISO 25010 sub-characteristics to the scenarios of §10.2 and
+the requirements that carry them.
+
+```mermaid
+flowchart LR
+  root["Quality"]
+  root --> g1["1 Reliability toward the upstream"]
+  root --> g2["2 Correctness of the product model"]
+  root --> g3["3 Operability"]
+  root --> g4["4 Security"]
+  root --> g5["5 Maintainability"]
+  g1 --> g1a["fault tolerance: Q1, Q8; W1.4, W1.5, W4.5, W4.6"]
+  g1 --> g1b["availability within limits: Q2, Q12; W4.2, W4.3"]
+  g2 --> g2a["no overbooking: Q3; P3, P6"]
+  g2 --> g2b["derived values never stale: P4; ADR 0003"]
+  g2 --> g2c["search correctness and speed: Q9; P5"]
+  g3 --> g3a["recoverability: Q5; N5.3"]
+  g3 --> g3b["deployability: Q4; N5.2, §7.5"]
+  g3 --> g3c["observability: N5.5; §8.6"]
+  g4 --> g4a["access control and isolation: Q10; N6.1, N6.2, N6.7"]
+  g4 --> g4b["confidentiality of secrets and data: N6.3, N6.4; §2 Legal"]
+  g4 --> g4c["accountability: ADR 0014; N6.5"]
+  g5 --> g5a["modifiability: Q6, Q7, Q11; §5.2 dependency rule"]
+  g5 --> g5b["testability: N3.1, N3.3; §8.5"]
+  g5 --> g5c["analysability: §8.5 tooling; 01 traceability"]
+```
 
 ### 10.2 Quality scenarios
 
 Short form: context, stimulus, response, metric. U = usage scenario, C = change scenario.
 
-| Id | Type | Stimulus | Response | Metric |
-|---|---|---|---|---|
-| Q1 | U | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints answer from cache, marked stale; refresh job backs off | 0 upstream-caused 5xx; p95 latency unchanged |
-| Q2 | U | 13 locations refreshed every 15 minutes | Within the upstream budget; samples pruned at 90 days | < 5 calls/min of 60; table < 40k rows |
-| Q3 | U | Two bookings for the last seat at the same moment | One succeeds, one gets 409 | 0 overbookings in the concurrency test |
-| Q4 | U | Deploy a new api version | Rolling update, migrations first | 0 failed requests during rollout |
-| Q5 | U | Server lost | Terraform recreates, Helm reinstalls, PostgreSQL restored | restore drill under 30 minutes; RPO one night |
-| Q6 | C | Client changes the danger semantics to exact match | One query change, tests updated | under one hour, one ADR |
-| Q7 | C | A new weather provider | New adapter behind the same interface | no change outside `weather` |
+| Id | Type | Context | Stimulus | Response | Metric |
+|---|---|---|---|---|---|
+| Q1 | U | Normal load, samples present | OpenWeatherMap returns 5xx for 10 minutes | Weather endpoints answer from stored data, marked stale; refresh backs off, breaker opens then probes | 0 upstream-caused 5xx while stored values exist; p95 latency unchanged |
+| Q2 | U | 13 locations, 15 minute refresh | A day of operation | Calls stay inside the refresh share; samples pruned at 90 days | under 5 calls/min of 60; monthly under 100k; table under 40k rows |
+| Q3 | U | One seat left on a departure | Two bookings at the same moment | One 201, one 409 with remaining=0 | 0 overbookings in the concurrency test, 100 runs |
+| Q4 | U | Live traffic | Deploy a new api version with a migration | Migrate job, then rolling update behind readiness | 0 failed requests during rollout |
+| Q5 | U | Server lost | Rebuild from Terraform, Helm and the last backup | System back with yesterday's data | restore drill under 30 minutes; RPO one night |
+| Q6 | C | Client decides danger means exact match | Change the default | One query change, tests updated, one ADR | under one hour |
+| Q7 | C | A second weather provider is wanted | Add an adapter behind the same interface | Summaries and brackets unchanged | no change outside `weather` |
+| Q8 | U | Normal refresh running | One caller sends 200 ad hoc coordinates a minute | Caller gets 429 with Retry-After past its limit; refresh share untouched | refresh calls unaffected; 0 upstream 429s |
+| Q9 | U | 5,000 packages, 50,000 departures, 200,000 bookings | Bookable search over a 30 day range | One index-backed query, paged | p95 under 300 ms; plan documented |
+| Q10 | U | Two partners with bookings | Partner A reads, changes or cancels B's booking | 403 or 404, never data | 0 cross-partner reads in the auth tests |
+| Q11 | C | A fifth role (for example marketing with its own token) is wanted | Add the role and its permissions | Matrix updated in 00-domain and `core`, no view changes | under two hours |
+| Q12 | U | Location list grows to 500 | Scheduled refresh | Interval lengthens automatically; status shows the effective interval | under 48 calls/min; no 429 from upstream |
 
 ## 11. Risks and technical debt
 
 | Priority | Risk or debt | Consequence | Measure |
 |---|---|---|---|
-| 1 | Single node, single disk | Outage on server loss until restored | Backups + restore drill now; second node and replica in the roadmap |
-| 2 | Free tier weather data | No history, 3 hour resolution, 120 hour window | Persisted samples (ADR 0012); paid tier if the client needs more |
-| 3 | Operator-managed database with one instance | No failover | Two instances is one setting once a second node exists |
-| 4 | First day after deployment | Today's summary partial | Stated in the response (`partial`) |
+| 1 | Single node, single disk, single Celery beat | Outage on server loss until restored; no failover | Backups and a rehearsed restore now (Q5); second node, PostgreSQL replica and beat on a lease in the roadmap |
+| 2 | CloudNativePG learning curve inside a short time box | Days lost on the operator | Fallback rule in ADR 0007: plain chart if not clean by the first working day |
+| 3 | Free tier weather data | No history, 3 hour resolution, 120 hour window, first-day partial today | Persisted samples (ADR 0012); `partial` stated; paid tier if the client needs more |
+| 4 | Upstream API or condition codes change | Wrong labels or failed parsing | Closed label set with `unknown` fallback (W3.4); sample payloads in tests; adapter isolated (Q7) |
+| 5 | Certificate issuance fails (ACME, DNS not yet propagated, Let's Encrypt rate limits) | Site unreachable over HTTPS on launch day | Staging issuer first, then production; DNS set a day ahead; runbook entry |
+| 6 | Demo partner token is public by design | Demo data abuse, upstream budget pressure | Partner scope, per-token rate limit, nightly reset, ad hoc share cap (A17, W4.3) |
+| 7 | History tables grow without bound | Disk use over years | Acceptable now; retention policy in the roadmap (GDPR row) |
+| 8 | tz data goes stale in images | Local days mis-assigned after a DST rule change | tzdata updated on every image build (06-operations); F4 |
+| 9 | Precipitation probability ignored in the daily label | A likely-rain day labelled clear | Deliberate (ADR 0013); roadmap item with a client-set threshold |
+| 10 | One developer, no second reviewer | Blind spots in code and operations | ADRs and acceptance checks as the second reviewer; CI gates; walkthrough as review |
 
 ## 12. Glossary
 
+Business terms are defined once in [00-domain.md](00-domain.md) section 4. Technical terms used
+in this document:
+
 | Term | Definition |
 |---|---|
+| Known location | A row in the location list; refreshed by the worker, read from stored samples |
+| Ad hoc coordinate | A latitude and longitude not in the list; fetched on request, cached briefly, never persisted |
+| Weather sample | One 3 hour forecast slot or one observation for a known location, stored in UTC; newest fetch wins, an observation beats a forecast |
+| Local day | The calendar day in the location's IANA zone; a slot belongs to the day in which it starts |
+| Partial | A day whose slots are incomplete (today's past hours for ad hoc coordinates, the cut fifth day, a gap); reported with sample counts |
+| Stale | A stored value served because the upstream could not be reached; carries its age |
+| Bracket edge | A number in the ascending edge list; brackets are half-open, open ended at both ends |
 | Departure | A package on one date with its capacity; ends after the package's duration |
-| Bookable | Departure in the requested range, in the future, with seats remaining |
-| Danger score | 0 none, 1 low, 2 medium, 3 high; a package's score is the max of its destinations |
-| Weather sample | One 3 hour forecast slot or one observation for a known location, stored in UTC |
-| Local day | The calendar day in the location's IANA zone |
-
-Business terms are defined once in [00-domain.md](00-domain.md) section 4; this table keeps the
-technical ones only.
+| Bookable | An active package with a danger score, and a planned departure starting in the range, on or after the agency's today, with seats remaining |
+| Snapshot | A value copied onto a booking at booking time (price, danger) so the record stays immutable |
+| History table | The per-table change log filled by database triggers with actor and request (ADR 0014) |
+| Budget share | The part of the upstream's per-minute limit reserved for the scheduled refresh or for ad hoc calls |
+| Circuit breaker | The adapter state that stops upstream calls after repeated failures and probes to resume |
+| Demo partner | The `partner` user whose token the case study site embeds; its bookings are isolated and reset nightly |
