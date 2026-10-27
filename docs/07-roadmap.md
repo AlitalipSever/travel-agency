@@ -12,6 +12,10 @@ acceptance checks pass in CI.
 |---|---|---|---|
 | B1 Django skeleton | 2026-10-27 (PR #1) | `/api/docs` serves the schema; N6.1 401 tested; A16 setting readable | 403 per role lands with the permission matrix (B9) |
 | L1 docker compose | 2026-10-27 (PR #2) | `make up`, `/readyz`, `make test` against the compose database | The site service joins when W1 lands |
+| B2 Weather adapter and samples | 2026-10-27 (PR #3) | W1.1 to W1.5, W4.1 to W4.7 with a mocked upstream; live smoke test against OpenWeatherMap | Operations-status clauses of W4.2 and W4.5 close with B12 |
+| B3 Daily summary and forecast | 2026-10-27 (PR #4) | W2.1 to W2.6, W3.1 to W3.5; table tests for DST days, ties, no daytime slot, unmapped codes | Expected slots counted from aligned UTC slot starts (ADR 0013) |
+| B4 Locations | 2026-10-27 (PR #5) | L1.1 to L1.5, L2.1 to L2.4; 403 matrix for sales and partner | L1.6 attribution lands with B11 |
+| B5 Brackets | 2026-10-27 (PR #6) | L3.1 to L3.6, L4.1 to L4.5; latest observations in one query | Quantile mode rounds temperatures to one decimal so no bracket is empty |
 | B2 weather adapter | 2026-10-27 (PR #3) | W1.1 to W1.5, W4.1 to W4.7 as tests incl. timed checks; R1 and R2 with the mock upstream; live smoke test when a key is present | "Visible in the operations status" parts of W4.2 and W4.5 land with `/ops/status` (B12) |
 
 ## 2. Deliberately left out

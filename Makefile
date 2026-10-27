@@ -38,8 +38,8 @@ build:           ## rebuild the api image
 migrate:         ## apply migrations
 	$(API_DB) python manage.py migrate --noinput
 
-seed:            ## insert the South American capitals that are missing (idempotent)
-	$(API_DB) python manage.py seed_locations
+seed:            ## insert the capitals and destination types that are missing (idempotent)
+	$(API_DB) python manage.py seed_locations && $(API_DB) python manage.py seed_destination_types
 
 makemigrations:  ## create migrations from model changes
 	$(API_DB) python manage.py makemigrations
