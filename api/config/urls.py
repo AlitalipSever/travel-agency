@@ -21,4 +21,5 @@ urlpatterns = [
     path("api/v1/", include("weather.api.urls")),
     path("api/v1/", include("locations.api.urls")),
     path("api/v1/", include("catalogue.api.urls")),
+    path("api/v1/", include("booking.api.urls")),
 ]
