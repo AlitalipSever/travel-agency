@@ -10,7 +10,9 @@ acceptance checks pass in CI.
 
 | Package | Closed | Acceptance checks | Note |
 |---|---|---|---|
-| | | | |
+| B1 Django skeleton | 2026-10-27 (PR #1) | `/api/docs` serves the schema; N6.1 401 tested; A16 setting readable | 403 per role lands with the permission matrix (B9) |
+| L1 docker compose | 2026-10-27 (PR #2) | `make up`, `/readyz`, `make test` against the compose database | The site service joins when W1 lands |
+| B2 weather adapter | 2026-10-27 (PR #3) | W1.1 to W1.5, W4.1 to W4.7 as tests incl. timed checks; R1 and R2 with the mock upstream; live smoke test when a key is present | "Visible in the operations status" parts of W4.2 and W4.5 land with `/ops/status` (B12) |
 
 ## 2. Deliberately left out
 
