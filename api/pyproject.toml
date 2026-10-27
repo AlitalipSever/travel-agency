@@ -1,0 +1,26 @@
+[project]
+name = "travel-agency-api"
+version = "0.1.0"
+description = "Travel agency backend: weather, locations by temperature bracket, tour packages with dated departures and bookings."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[dependency-groups]
+dev = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = false
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+python_files = ["test_*.py"]
