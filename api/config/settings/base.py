@@ -99,6 +99,8 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    # RFC 7807 problem details for every non-2xx response (core/errors.py).
+    "EXCEPTION_HANDLER": "core.errors.problem_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
