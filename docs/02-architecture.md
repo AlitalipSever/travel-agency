@@ -173,7 +173,7 @@ names, coordinates decimal degrees (WGS 84), errors RFC 7807 problem details.
 | Channel | Protocol | Business partners | Carries |
 |---|---|---|---|
 | Public API `/api/v1` | HTTPS, JSON, `Authorization: Token`, OpenAPI 3 at `/api/schema`, Swagger at `/api/docs` | operations, sales, finance, partners | Every business input and output above |
-| Browser to API | Same API from the case study site's pages, CORS restricted to the site's origin, demo partner token | case study visitor | Demo searches and bookings, operations status |
+| Browser to site to API | The site's pages call its own proxy route; the site's server calls the API with the demo partner token (ADR 0015) | case study visitor | Demo searches and bookings, operations status |
 | Django admin | HTTPS, session cookie | operations | Catalogue edits (same data as the API) |
 | Upstream weather | HTTPS, API key in query, JSON | OpenWeatherMap | Coordinates out; observations and forecast slots in |
 | Task queue | Redis protocol, Celery | internal | Refresh jobs (scheduled, on create, manual) |
@@ -224,7 +224,7 @@ flowchart TB
     redis[("Redis<br/>ad hoc weather cache, Celery queue")]
   end
   owm["OpenWeatherMap"]
-  web -- "HTTPS /api/v1, demo token" --> api
+  web -- "HTTP /api/v1, demo token (server side)" --> api
   api -- "SQL: catalogue, samples, history" --> pg
   api -- "ad hoc cache, enqueue refresh on create or on request" --> redis
   api -- "HTTPS, ad hoc coordinates only" --> owm
@@ -558,7 +558,7 @@ where the rule is decided.
 | Filters | Extras only narrow a required result; absent parameters leave the required behaviour unchanged | P5.6; N4.5 |
 | Honest degradation | `source` (live, cached, stale), `partial`, sample counts, `observed_at`, `as_of`, `stale` marks; the consumer sees data quality, nothing is hidden | W1, W2, L3; ISO 25012 |
 | Admin | Django admin for `ops` only, same models and constraints as the API | ADR 0001 |
-| Case study site | Reads `docs/` and the API; CORS limited to its origin; acts as the `demo` partner | A17; 04-api |
+| Case study site | Reads `docs/` and the API; the demo token stays in its server, forwarded through an allow-listed proxy route; acts as the `demo` partner | A17; 04-api; ADR 0015 |
 
 ### 8.3 Security
 

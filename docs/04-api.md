@@ -13,7 +13,7 @@ Status: reviewed against 00-domain, 01-requirements, 02-architecture and 03-data
 | Format | JSON; dates `YYYY-MM-DD`, timestamps ISO 8601 with offset (UTC in responses), money as a decimal string plus `currency`, coordinates as decimal degrees |
 | Auth | `Authorization: Token <token>`; one token per user, one role per user (`ops`, `sales`, `partner`, `finance`). Tokens are issued by operations in the admin; there is no self-service login. 401 without a valid token, 403 outside the role's permissions |
 | Partner scope | A `partner` token only sees and changes bookings and travellers with its own `partner_id`; a `partner` token never sees another partner's rows (404, not 403, so existence is not leaked) |
-| Demo | The case study site calls the API from the browser with the `demo` partner's token; CORS allows the site's origin only (A17) |
+| Demo | The case study site acts as the `demo` partner: its server holds the token and forwards an allow-listed subset of the API through a proxy route; the browser never sees the token and the API's CORS stays closed (A17, ADR 0015) |
 | Errors | RFC 7807 problem details, `Content-Type: application/problem+json`: `type` (a URI under `/problems/`), `title`, `status`, `detail`, `instance`, and `errors[]` (field, message) on validation failures; internals are never echoed |
 | Pagination | `?page=&page_size=` (default 20, max 100); responses carry `count`, `next`, `previous`, `results[]`; every list has a stable order with `id` as the last tie breaker |
 | Filtering | Query parameters listed per endpoint; unknown parameters are rejected with 400 (typos never silently return everything) |

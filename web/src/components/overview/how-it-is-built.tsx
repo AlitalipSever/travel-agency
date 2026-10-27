@@ -1,0 +1,41 @@
+const ROWS = [
+  ["api", "Django 5.2, Django REST Framework, drf-spectacular, gunicorn", "HTTP API, admin, OpenAPI contract, RFC 7807 errors"],
+  ["worker, beat", "Celery on Redis", "Scheduled weather refresh with spread and an adaptive interval, retention, on-create refresh"],
+  ["postgres", "PostgreSQL 16", "System of record: locations, samples, catalogue, departures, bookings"],
+  ["redis", "Redis 7", "Celery broker, ad hoc weather cache, call budget and breaker state"],
+  ["web", "Next.js, shadcn/ui", "This site: documents from the repository, live demo through a server-side proxy, operations status"],
+];
+
+export function HowItIsBuilt() {
+  return (
+    <section className="border-y bg-card/60">
+      <div className="mx-auto max-w-6xl px-4 py-16">
+        <p className="label-mono text-muted-foreground">Containers</p>
+        <h2 className="mt-2 text-2xl font-medium tracking-tight">Five processes, one compose file, one Helm chart</h2>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          The same images run on a laptop with docker compose and on a Kubernetes node through one chart; environments differ only in values files. Architecture in arc42 form with C4 views is under Decisions and Plan.
+        </p>
+        <div className="mt-6 overflow-hidden rounded-lg border">
+          <table className="w-full text-sm">
+            <thead className="label-mono bg-muted text-left text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2 font-normal">Container</th>
+                <th className="px-4 py-2 font-normal">Technology</th>
+                <th className="px-4 py-2 font-normal">Responsibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ROWS.map(([c, t, r]) => (
+                <tr key={c} className="border-t">
+                  <td className="px-4 py-2.5 font-mono text-xs">{c}</td>
+                  <td className="px-4 py-2.5">{t}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{r}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}

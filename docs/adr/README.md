@@ -19,3 +19,4 @@ supersedes an earlier one. Status: proposed, accepted, superseded, rejected.
 | [0012](0012-persist-weather-samples.md) | Forecast slots and observations are persisted for known locations | accepted |
 | [0013](0013-daily-summary-and-time.md) | Daily summary rules (mean, min, max; daytime significant weather) and UTC storage with IANA local days | accepted |
 | [0014](0014-history-by-triggers.md) | Change history by database triggers (per-table history, actor from session context), not an application audit log | accepted |
+| [0015](0015-site-stack-and-demo-token.md) | Case study site on Next.js App Router with shadcn/ui; the demo token stays server side behind a proxy route | proposed |
