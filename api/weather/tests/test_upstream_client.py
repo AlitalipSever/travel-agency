@@ -6,8 +6,8 @@ from datetime import UTC, datetime, timedelta
 import httpx
 import pytest
 
-from weather import fixtures
-from weather.client import (
+from weather.upstream import fixtures
+from weather.upstream.client import (
     HttpWeatherClient,
     UpstreamError,
     UpstreamRateLimited,
@@ -16,7 +16,7 @@ from weather.client import (
     parse_current,
     parse_forecast,
 )
-from weather.fixtures import MockWeatherClient
+from weather.upstream.fixtures import MockWeatherClient
 
 
 def test_parse_current_maps_fields() -> None:

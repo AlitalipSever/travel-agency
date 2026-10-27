@@ -13,7 +13,7 @@ import httpx
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from weather.fixtures import FIXTURE_DIR
+from weather.upstream.fixtures import FIXTURE_DIR
 
 
 class Command(BaseCommand):

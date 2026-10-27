@@ -121,6 +121,16 @@ SPECTACULAR_SETTINGS = {
 OPENWEATHER_API_KEY = env("OPENWEATHER_API_KEY", default="")
 OPENWEATHER_BASE_URL = env("OPENWEATHER_BASE_URL", default="https://api.openweathermap.org")
 OPENWEATHER_TIMEOUT_S = env.float("OPENWEATHER_TIMEOUT_S", default=5.0)
+UPSTREAM_RETRIES = env.int("UPSTREAM_RETRIES", default=2)
+# Budget shares per minute (sum under 80 % of the free tier's 60) and the breaker (06 §8).
+UPSTREAM_REFRESH_SHARE = env.int("UPSTREAM_REFRESH_SHARE", default=40)
+UPSTREAM_ADHOC_SHARE = env.int("UPSTREAM_ADHOC_SHARE", default=8)
+UPSTREAM_MONTHLY_LIMIT = env.int("UPSTREAM_MONTHLY_LIMIT", default=1_000_000)
+BREAKER_FAILURES = env.int("BREAKER_FAILURES", default=5)
+BREAKER_COOLDOWN_S = env.int("BREAKER_COOLDOWN_S", default=60)
+
+# Redis: ad hoc weather cache, budget and breaker state, Celery broker (ADR 0005).
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
 LOGGING = {
     "version": 1,

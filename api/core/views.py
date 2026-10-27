@@ -28,12 +28,21 @@ class ReadyzView(APIView):
     schema = None
 
     def get(self, request: Request) -> Response:
-        checks = {"database": _database_ok()}
+        checks = {"database": _database_ok(), "redis": _redis_ok()}
         ready = all(checks.values())
         return Response(
             {"status": "ok" if ready else "unavailable", "checks": checks},
             status=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
+
+
+def _redis_ok() -> bool:
+    try:
+        from core.redis_client import redis_connection
+
+        return bool(redis_connection().ping())
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _database_ok() -> bool:
