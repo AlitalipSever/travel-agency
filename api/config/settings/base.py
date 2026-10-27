@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "core",
+    "locations",
+    "weather",
 ]
 
 MIDDLEWARE = [
@@ -116,9 +118,62 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
+# Weather upstream (F1 to F3, ADR 0005). An empty key selects the fixture-backed mock client.
+OPENWEATHER_API_KEY = env("OPENWEATHER_API_KEY", default="")
+OPENWEATHER_BASE_URL = env("OPENWEATHER_BASE_URL", default="https://api.openweathermap.org")
+OPENWEATHER_TIMEOUT_S = env.float("OPENWEATHER_TIMEOUT_S", default=5.0)
+UPSTREAM_RETRIES = env.int("UPSTREAM_RETRIES", default=2)
+# Budget shares per minute (sum under 80 % of the free tier's 60) and the breaker (06 §8).
+UPSTREAM_REFRESH_SHARE = env.int("UPSTREAM_REFRESH_SHARE", default=40)
+UPSTREAM_ADHOC_SHARE = env.int("UPSTREAM_ADHOC_SHARE", default=8)
+UPSTREAM_MONTHLY_LIMIT = env.int("UPSTREAM_MONTHLY_LIMIT", default=1_000_000)
+BREAKER_FAILURES = env.int("BREAKER_FAILURES", default=5)
+BREAKER_COOLDOWN_S = env.int("BREAKER_COOLDOWN_S", default=60)
+
+# Redis: ad hoc weather cache, budget and breaker state, Celery broker (ADR 0005).
+REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+
+# Django cache on Redis: DRF throttles and short-lived application caches (separate key prefix).
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "KEY_PREFIX": "dj",
+    }
+}
+ADHOC_RATE_PER_MIN = env.int("ADHOC_RATE_PER_MIN", default=30)
+
+# Celery (02 §8.4): idempotent tasks, late acks, hard time limits, schedule in code.
+REFRESH_INTERVAL_S = env.int("REFRESH_INTERVAL_S", default=900)
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = None
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_TIME_LIMIT = 20 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 18 * 60
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
+    "weather-refresh-all": {
+        "task": "weather.tasks.refresh_all",
+        "schedule": REFRESH_INTERVAL_S,
+        "kwargs": {"trigger": "scheduled"},
+    },
+    "weather-prune-samples": {
+        "task": "weather.tasks.prune_samples",
+        "schedule": 24 * 3600,  # daily; beat starts the clock when it starts
+    },
+}
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": env("DJANGO_LOG_LEVEL", default="INFO")},
+    # HTTP client libraries log full request URLs at INFO, query string included: never below
+    # WARNING, or the upstream API key would land in the logs (N6.3).
+    "loggers": {
+        "httpx": {"level": "WARNING"},
+        "httpcore": {"level": "WARNING"},
+    },
 }

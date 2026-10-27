@@ -24,6 +24,10 @@ source of truth for scope; assumptions that fill its gaps are listed there and d
   documents the names only.
 - Python: Django + Django REST Framework, Celery, pytest, ruff. Views stay thin; domain logic
   lives in a `services` module per app. Migrations are committed.
+- App layout: `models.py`, `tasks.py` and `migrations/` at the app root (Django and Celery look
+  there); when an app has more than three modules of one kind, group them: `upstream/` (talks
+  to external systems), `domain/` (pure rules, no Django), `api/` (serializers, views, urls);
+  tests under `tests/` named by layer (`test_upstream_*.py`, `test_domain_*.py`, `test_api_*.py`).
 - TypeScript: Next.js App Router, shadcn/ui, no hand-rolled primitives.
 - Containers: multi-stage Dockerfiles, non-root user, arm64 and amd64 images.
 - Kubernetes: one Helm chart under `chart/`, environment differences only in values files.
