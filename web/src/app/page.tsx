@@ -25,8 +25,8 @@ export default function OverviewPage() {
             <Button size="lg" nativeButton={false} className="bg-white text-spectral-night hover:bg-white/90" render={<Link href="/demo" />}>
               Open the live demo <ArrowRight className="size-4" />
             </Button>
-            <Button size="lg" variant="outline" nativeButton={false} className="border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white" render={<Link href="/walkthrough" />}>
-              Ten minute walkthrough
+            <Button size="lg" variant="outline" nativeButton={false} className="border-white/60 bg-transparent text-white hover:bg-white/10 hover:text-white" render={<Link href="/docs/02-architecture" />}>
+              Architecture, arc42
             </Button>
           </div>
         </div>

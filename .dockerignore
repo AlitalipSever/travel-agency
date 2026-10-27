@@ -1,0 +1,5 @@
+
+# web build context is the repository root
+web/node_modules
+web/.next
+api/.venv
