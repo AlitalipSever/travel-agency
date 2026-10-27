@@ -19,6 +19,7 @@ acceptance checks pass in CI.
 | B6 Catalogue | 2026-10-27 (PR #7) | P1.1 to P1.4, P2.1 to P2.5, P4.1 to P4.3; package list in three queries | Danger derived in the query (ADR 0003); write field is `destination_ids` |
 | B7 Departures | 2026-10-27 (PR #8) | P3.1 to P3.5, P1.6; cancel idempotent under the row lock | Booking tables created here (model only) so seats are real; rules and endpoints with B9 |
 | B8 Bookable search | 2026-10-27 (PR #9) | P5.1 to P5.5, N3.1 (five queries per page); P5.7 measured in `docs/plans/bookable.md` | One partial index took query 1 from 1,340 ms to 21 ms on 20,000 departures |
+| B9 Booking | 2026-10-28 (PR #12) | P6.1 to P6.6, N6.2 with two partner tokens; P6.2 concurrency test, 20 rounds of two threads on the last seat | P6.7 attribution lands with B11; `/partners` endpoint deferred (admin creates partners) |
 
 ## 2. Deliberately left out
 
