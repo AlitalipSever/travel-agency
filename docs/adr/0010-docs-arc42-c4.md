@@ -25,7 +25,10 @@ GitHub and on the site without image files.
 
 ## Consequences
 
-docs/02-architecture.md follows arc42 with a one-page summary in front (N1); component level
+docs/02-architecture.md follows arc42 with a one-page summary in front (N1). C4 views are drawn
+with Mermaid's plain `flowchart`, not its experimental C4 syntax, because the C4 grammar fails in
+older renderers (editor previews); the levels and the box semantics are kept, the notation is
+not; component level
 (C4 level 3) is added once code exists. Requirements follow the ISO 29148 properties with
 acceptance checks (01-requirements §2) and every ADR carries an Addresses line back to them.
 ADRs under docs/adr with the template in 0000-template.md; arc42-checklist.md tracks coverage.

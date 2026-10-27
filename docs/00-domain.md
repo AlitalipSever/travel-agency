@@ -8,20 +8,20 @@ client" and "the agency"; everyone else who touches or depends on the system is 
 ```mermaid
 flowchart TB
   subgraph wider["Wider environment"]
-    traveller[Traveller]
-    partner[Partner agencies]
-    regulator[Regulators: package travel rules, data protection]
-    suppliers[Local suppliers: hotels, guides]
-    subgraph agency["The agency (containing system)"]
-      owner[Agency owner, the client]
-      ops[Operations / product]
-      sales[Sales agents]
-      finance[Finance]
-      marketing[Marketing]
+    traveller["Traveller"]
+    partner["Partner agencies"]
+    regulator["Regulators: package travel rules, data protection"]
+    suppliers["Local suppliers: hotels, guides"]
+    subgraph agency["The agency, containing system"]
+      owner["Agency owner, the client"]
+      ops["Operations / product"]
+      sales["Sales agents"]
+      finance["Finance"]
+      marketing["Marketing"]
       subgraph system["The system"]
-        api[(Travel agency backend)]
-        operator[Developer / operator]
-        owm[OpenWeatherMap]
+        api[("Travel agency backend")]
+        operator["Developer / operator"]
+        owm["OpenWeatherMap"]
       end
     end
   end

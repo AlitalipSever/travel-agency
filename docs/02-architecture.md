@@ -133,21 +133,25 @@ topology were free, and the choices are argued in ADR 0005 to 0009 and 0014.
 
 ### 3.1 Business context
 
+C4 context, drawn as a plain flowchart so that every Markdown renderer shows it (ADR 0010).
+
 ```mermaid
-C4Context
-  Person(ops, "Operations", "Manages locations, destinations, packages, departures, bracket edges")
-  Person(sales, "Sales", "Searches, books, cancels")
-  Person(finance, "Finance", "Reads bookings and prices")
-  Person(visitor, "Case study visitor", "Reads the site, tries the live demo as the demo partner")
-  System_Ext(partner, "Partner agency system", "Searches and books for its own travellers")
-  System(travel-agency, "Travel Agency", "Backend API, admin and case study site")
-  System_Ext(owm, "OpenWeatherMap", "Current weather and 5 day / 3 hour forecast, free tier")
-  Rel(ops, travel-agency, "admin and API, ops token")
-  Rel(sales, travel-agency, "API, sales token")
-  Rel(finance, travel-agency, "API, finance token")
-  Rel(partner, travel-agency, "API, partner token")
-  Rel(visitor, travel-agency, "site; demo partner token")
-  Rel(travel-agency, owm, "API key, rate limited")
+flowchart LR
+  ops["Operations<br/>manages locations, destinations, packages, departures, bracket edges"]
+  sales["Sales<br/>searches, books, cancels"]
+  finance["Finance<br/>reads bookings and prices"]
+  visitor["Case study visitor<br/>reads the site, tries the live demo as the demo partner"]
+  partner["Partner agency system<br/>searches and books for its own travellers"]
+  sys(["Travel Agency<br/>backend API, admin and case study site"])
+  owm["OpenWeatherMap<br/>current weather and 5 day / 3 hour forecast, free tier"]
+  ops -- "admin and API, ops token" --> sys
+  sales -- "API, sales token" --> sys
+  finance -- "API, finance token" --> sys
+  partner -- "API, partner token" --> sys
+  visitor -- "site, demo partner token" --> sys
+  sys -- "API key, rate limited" --> owm
+  classDef ext fill:#eee,stroke:#999,color:#333
+  class partner,owm ext
 ```
 
 | Communication partner | Into the system | Out of the system |
@@ -206,25 +210,29 @@ traveller-facing role (the brief asks for a system that runs the agency, 00-doma
 
 ### 5.1 Level 1: containers (C4 level 2)
 
+C4 container view as a plain flowchart (ADR 0010).
+
 ```mermaid
-C4Container
-  Container(web, "web", "Next.js", "Case study site: overview, live demo, API docs, decisions, plan, operations, walkthrough")
-  Container(api, "api", "Django + DRF, gunicorn", "REST API /api/v1, admin, OpenAPI schema, health")
-  Container(worker, "worker", "Celery", "Weather refresh and sample persistence, demo reset, retention")
-  Container(beat, "beat", "Celery beat", "Schedules refresh, demo reset and retention")
-  Container(migrate, "migrate", "Django job", "Runs migrations and the seed before each rollout")
-  ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, weather samples, history tables, settings")
-  ContainerDb(redis, "Redis", "", "Ad hoc weather cache, Celery queue")
-  System_Ext(owm, "OpenWeatherMap", "")
-  Rel(web, api, "HTTPS /api/v1, demo token")
-  Rel(api, pg, "SQL: catalogue, samples, history")
-  Rel(api, redis, "ad hoc cache; enqueue refresh on create or on request")
-  Rel(api, owm, "HTTPS, ad hoc coordinates only")
-  Rel(worker, redis, "dequeue")
-  Rel(worker, owm, "HTTPS, known locations")
-  Rel(worker, pg, "SQL: upsert samples, demo reset")
-  Rel(beat, redis, "enqueue on schedule")
-  Rel(migrate, pg, "DDL, seed")
+flowchart TB
+  subgraph system["Travel Agency"]
+    web["web<br/>Next.js<br/>case study site: overview, live demo, API docs, decisions, plan, operations, walkthrough"]
+    api["api<br/>Django + DRF, gunicorn<br/>REST API /api/v1, admin, OpenAPI schema, health"]
+    worker["worker<br/>Celery<br/>weather refresh and sample persistence, demo reset, retention"]
+    beat["beat<br/>Celery beat<br/>schedules refresh, demo reset and retention"]
+    migrate["migrate<br/>Django job<br/>migrations and seed before each rollout"]
+    pg[("PostgreSQL<br/>CloudNativePG<br/>catalogue, departures, bookings, weather samples, history tables, settings")]
+    redis[("Redis<br/>ad hoc weather cache, Celery queue")]
+  end
+  owm["OpenWeatherMap"]
+  web -- "HTTPS /api/v1, demo token" --> api
+  api -- "SQL: catalogue, samples, history" --> pg
+  api -- "ad hoc cache, enqueue refresh on create or on request" --> redis
+  api -- "HTTPS, ad hoc coordinates only" --> owm
+  worker -- "dequeue" --> redis
+  worker -- "HTTPS, known locations" --> owm
+  worker -- "SQL: upsert samples, demo reset" --> pg
+  beat -- "enqueue on schedule" --> redis
+  migrate -- "DDL, seed" --> pg
 ```
 
 Black boxes:
@@ -242,22 +250,22 @@ Black boxes:
 ### 5.2 Level 2: Django apps inside `api` (C4 level 3, to be verified against the code)
 
 ```mermaid
-C4Component
-  Container_Boundary(api, "api") {
-    Component(core, "core", "Django app", "Token auth and roles, problem details, history (pghistory), health, settings table, pagination")
-    Component(weather, "weather", "Django app", "Upstream adapter (timeouts, retries, breaker, budget), ad hoc cache, WeatherSample, summarize_day, refresh tasks")
-    Component(locations, "locations", "Django app", "Location model and seed, time zone derivation, brackets (fixed and quantile), bracket edges setting")
-    Component(catalog, "catalog", "Django app", "DestinationType, Destination, Package with ordered destinations, derived danger")
-    Component(booking, "booking", "Django app", "Departure, Traveller, Partner, Booking; bookable search; booking service with row lock and idempotency; demo reset")
-  }
-  Rel(locations, weather, "reads samples for brackets; triggers refresh on create")
-  Rel(catalog, locations, "destination belongs to a location")
-  Rel(booking, catalog, "departures belong to packages; danger derived from destinations")
-  Rel(booking, weather, "weather aware filter reads summaries")
-  Rel(weather, core, "uses")
-  Rel(locations, core, "uses")
-  Rel(catalog, core, "uses")
-  Rel(booking, core, "uses")
+flowchart BT
+  subgraph apibox["api"]
+    core["core<br/>token auth and roles, problem details, history (pghistory), health, settings table, pagination"]
+    weather["weather<br/>upstream adapter (timeouts, retries, breaker, budget), ad hoc cache, WeatherSample, summarize_day, refresh tasks"]
+    locations["locations<br/>Location model and seed, time zone derivation, brackets (fixed and quantile), bracket edges setting"]
+    catalog["catalog<br/>DestinationType, Destination, Package with ordered destinations, derived danger"]
+    booking["booking<br/>Departure, Traveller, Partner, Booking; bookable search; booking service with row lock and idempotency; demo reset"]
+  end
+  locations -- "reads samples for brackets, triggers refresh on create" --> weather
+  catalog -- "destination belongs to a location" --> locations
+  booking -- "departures belong to packages, danger from destinations" --> catalog
+  booking -- "weather aware filter reads summaries" --> weather
+  weather --> core
+  locations --> core
+  catalog --> core
+  booking --> core
 ```
 
 | App | Responsibility | Key modules | Fulfils | Depends on |
@@ -277,28 +285,28 @@ app imports a dependent app. Enforced by review now; a lint rule once the code e
 
 ```mermaid
 flowchart LR
-  subgraph in["Weather in (scheduled, and on location create)"]
-    beat[Celery beat] -->|every 15 min| worker
-    worker -->|2 calls per location, within budget| owm[OpenWeatherMap]
+  subgraph in["Weather in: scheduled, and on location create"]
+    beat["Celery beat"] -- "every 15 min" --> worker["worker"]
+    worker -- "2 calls per location, within budget" --> owm["OpenWeatherMap"]
     owm --> worker
-    worker -->|upsert slots and observation| pg[(PostgreSQL WeatherSample)]
+    worker -- "upsert slots and observation" --> pg[("PostgreSQL WeatherSample")]
   end
   subgraph read["Weather out"]
-    api[API] -->|known location| pg
-    api -->|ad hoc coordinate| redis[(Redis cache)]
-    redis -.miss.-> owm
-    pg --> summary[summarize_day]
-    summary --> resp1[today + 5 days]
+    api["API"] -- "known location" --> pg
+    api -- "ad hoc coordinate" --> redis[("Redis cache")]
+    redis -. "miss" .-> owm
+    pg --> summary["summarize_day"]
+    summary --> resp1["today + 5 days"]
   end
 ```
 
 ```mermaid
 flowchart LR
-  req["GET /packages/bookable?from&to&danger"] --> val[validate inputs]
-  val --> q["one query: active packages, derived danger <= given,\njoin planned departures in range, seats left"]
-  q --> pg[(PostgreSQL)]
-  pg --> order[order: earliest departure, name, id; page]
-  order --> resp["packages with matching departures,\nends_on and remaining seats"]
+  req["GET /packages/bookable?from&to&danger"] --> val["validate inputs"]
+  val --> q["one query: active packages, derived danger at most the given one,<br/>join planned departures in range, seats left"]
+  q --> pg[("PostgreSQL")]
+  pg --> order["order: earliest departure, name, id; page"]
+  order --> resp["packages with matching departures,<br/>ends_on and remaining seats"]
 ```
 
 ### 6.2 Scenarios
@@ -316,20 +324,20 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  dns[Cloudflare DNS] --> ing[ingress-nginx + cert-manager]
-  subgraph k3s on one Hetzner ARM server
-    ing --> web
-    ing --> api
-    api --> pg[(PostgreSQL, CloudNativePG)]
-    api --> redis[(Redis)]
-    worker --> redis
+  dns["Cloudflare DNS"] --> ing["ingress-nginx + cert-manager"]
+  subgraph node["k3s on one Hetzner ARM server"]
+    ing --> web["web"]
+    ing --> api["api"]
+    api --> pg[("PostgreSQL, CloudNativePG")]
+    api --> redis[("Redis")]
+    worker["worker"] --> redis
     worker --> pg
-    beat --> redis
-    pg -. nightly backup .-> s3[(Hetzner Object Storage)]
+    beat["beat"] --> redis
+    pg -. "nightly backup" .-> s3[("Hetzner Object Storage")]
   end
-  gh[GitHub Actions] -- buildx, push --> ghcr[(ghcr.io)]
-  gh -- helm upgrade --> ing
-  tf[Terraform, hcloud] -. creates .-> k3s
+  gh["GitHub Actions"] -- "buildx, push" --> ghcr[("ghcr.io")]
+  gh -- "helm upgrade" --> ing
+  tf["Terraform, hcloud"] -. "creates" .-> node
 ```
 
 Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind),
