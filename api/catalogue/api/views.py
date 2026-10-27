@@ -3,19 +3,26 @@ only ops writes. Rules live in services; the derived danger comes from the query
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
-from rest_framework import serializers, status, viewsets
+from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.permissions import ReadAnyWriteOps
 
 from .. import services
-from ..models import Destination, DestinationType, Package
-from .serializers import DestinationSerializer, DestinationTypeSerializer, PackageSerializer
+from ..models import Departure, Destination, DestinationType, Package
+from .serializers import (
+    DepartureSerializer,
+    DestinationSerializer,
+    DestinationTypeSerializer,
+    PackageSerializer,
+)
 
 _WRITE_METHODS = ["get", "post", "patch", "delete", "head", "options"]
 
@@ -40,6 +47,15 @@ def _int_param(value: str | None, name: str, lo: int, hi: int) -> int | None:
     if not lo <= number <= hi:
         raise serializers.ValidationError({name: f"Between {lo} and {hi}."})
     return number
+
+
+def _date_param(value: str | None, name: str) -> date | None:
+    if value is None:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise serializers.ValidationError({name: "A date, YYYY-MM-DD."}) from exc
 
 
 class DestinationTypeViewSet(viewsets.ModelViewSet):
@@ -152,6 +168,60 @@ class PackageViewSet(viewsets.ModelViewSet):
     def _fresh(self, package: Package) -> Package:
         return self.get_queryset().get(pk=package.pk)
 
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        page = self.paginate_queryset(self.get_queryset())
+        rows = page if page is not None else list(self.get_queryset())
+        context = {
+            **self.get_serializer_context(),
+            "departure_summaries": services.departure_summaries([p.pk for p in rows]),
+        }
+        data = PackageSerializer(rows, many=True, context=context).data
+        if page is not None:
+            return self.get_paginated_response(data)
+        return Response(data)
+
+    @extend_schema(
+        methods=["GET"],
+        summary="Departures of a package with derived seats and end date",
+        parameters=[
+            OpenApiParameter("from", str, description="starts_on >= date"),
+            OpenApiParameter("to", str, description="starts_on <= date"),
+            OpenApiParameter("status", str, description="planned or cancelled"),
+        ],
+        responses={200: DepartureSerializer(many=True)},
+    )
+    @extend_schema(
+        methods=["POST"],
+        summary="Add a departure (ops); 409 on a duplicate date",
+        request=DepartureSerializer,
+        responses={201: DepartureSerializer},
+    )
+    @action(detail=True, methods=["get", "post"], url_path="departures")
+    def departures(self, request: Request, pk=None) -> Response:  # noqa: ANN001
+        package = self.get_object()
+        if request.method == "POST":
+            ser = DepartureSerializer(data=request.data)
+            ser.is_valid(raise_exception=True)
+            try:
+                dep = services.create_departure(
+                    package, ser.validated_data["starts_on"], ser.validated_data["capacity"]
+                )
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError(exc.message_dict) from exc
+            row = Departure.objects.with_seats().select_related("package").get(pk=dep.pk)
+            return Response(DepartureSerializer(row).data, status=status.HTTP_201_CREATED)
+        qs = Departure.objects.with_seats().select_related("package").filter(package=package)
+        params = request.query_params
+        if (start := _date_param(params.get("from"), "from")) is not None:
+            qs = qs.filter(starts_on__gte=start)
+        if (end := _date_param(params.get("to"), "to")) is not None:
+            qs = qs.filter(starts_on__lte=end)
+        if status_ := params.get("status"):
+            if status_ not in ("planned", "cancelled"):
+                raise serializers.ValidationError({"status": "planned or cancelled."})
+            qs = qs.filter(status=status_)
+        return Response(DepartureSerializer(qs.order_by("starts_on"), many=True).data)
+
     @extend_schema(summary="Create a package with its ordered destinations (ops)")
     def create(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data)
@@ -183,3 +253,46 @@ class PackageViewSet(viewsets.ModelViewSet):
     def destroy(self, request: Request, pk=None) -> Response:  # noqa: ANN001
         services.soft_delete_package(self.get_object())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DepartureViewSet(
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """GET, PATCH, DELETE /departures/{id}; POST /departures/{id}/cancel (P3)."""
+
+    serializer_class = DepartureSerializer
+    permission_classes = [ReadAnyWriteOps]
+    http_method_names = ["get", "patch", "delete", "post", "head", "options"]
+    queryset = Departure.objects.with_seats().select_related("package")
+
+    def _fresh(self, departure: Departure) -> Departure:
+        return self.get_queryset().get(pk=departure.pk)
+
+    @extend_schema(summary="Change capacity (409 below confirmed seats) or the date (ops)")
+    def partial_update(self, request: Request, pk=None) -> Response:  # noqa: ANN001
+        departure = self.get_object()
+        ser = self.get_serializer(departure, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        try:
+            services.update_departure(departure, dict(ser.validated_data))
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.message_dict) from exc
+        return Response(self.get_serializer(self._fresh(departure)).data)
+
+    @extend_schema(summary="Delete a departure without bookings; otherwise 409")
+    def destroy(self, request: Request, pk=None) -> Response:  # noqa: ANN001
+        services.delete_departure(self.get_object())
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        summary="Cancel: the departure and its confirmed bookings, idempotent (ops)",
+        request=None,
+        responses={200: DepartureSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel(self, request: Request, pk=None) -> Response:  # noqa: ANN001
+        departure = services.cancel_departure(self.get_object())
+        return Response(self.get_serializer(self._fresh(departure)).data)
