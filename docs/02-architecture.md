@@ -209,29 +209,67 @@ traveller-facing role (the brief asks for a system that runs the agency, 00-doma
 ```mermaid
 C4Container
   Container(web, "web", "Next.js", "Case study site: overview, live demo, API docs, decisions, plan, operations, walkthrough")
-  Container(api, "api", "Django + DRF, gunicorn", "REST API, admin, OpenAPI schema")
-  Container(worker, "worker", "Celery", "Weather refresh, sample persistence, bracket computation")
-  Container(beat, "beat", "Celery beat", "Schedules the refresh")
-  ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, weather samples, audit")
-  ContainerDb(redis, "Redis", "", "Ad hoc weather cache, Celery broker")
+  Container(api, "api", "Django + DRF, gunicorn", "REST API /api/v1, admin, OpenAPI schema, health")
+  Container(worker, "worker", "Celery", "Weather refresh and sample persistence, demo reset, retention")
+  Container(beat, "beat", "Celery beat", "Schedules refresh, demo reset and retention")
+  Container(migrate, "migrate", "Django job", "Runs migrations and the seed before each rollout")
+  ContainerDb(pg, "PostgreSQL", "CloudNativePG", "Catalogue, departures, bookings, weather samples, history tables, settings")
+  ContainerDb(redis, "Redis", "", "Ad hoc weather cache, Celery queue")
   System_Ext(owm, "OpenWeatherMap", "")
-  Rel(web, api, "HTTPS /api")
-  Rel(api, pg, "SQL")
-  Rel(api, redis, "ad hoc cache")
-  Rel(api, owm, "HTTPS, ad hoc only")
-  Rel(worker, owm, "HTTPS")
-  Rel(worker, pg, "SQL, samples")
-  Rel(beat, redis, "enqueue")
+  Rel(web, api, "HTTPS /api/v1, demo token")
+  Rel(api, pg, "SQL: catalogue, samples, history")
+  Rel(api, redis, "ad hoc cache; enqueue refresh on create or on request")
+  Rel(api, owm, "HTTPS, ad hoc coordinates only")
+  Rel(worker, redis, "dequeue")
+  Rel(worker, owm, "HTTPS, known locations")
+  Rel(worker, pg, "SQL: upsert samples, demo reset")
+  Rel(beat, redis, "enqueue on schedule")
+  Rel(migrate, pg, "DDL, seed")
 ```
 
-`TODO (arc42 5.1)`: black box table per container: purpose, interfaces, location in the repo.
+Black boxes:
 
-### 5.2 Level 2: Django apps inside `api`
+| Container | Purpose | Interfaces | Fulfils | Location |
+|---|---|---|---|---|
+| api | Serves the public API and the admin; computes summaries, brackets and the bookable search at read time | HTTPS in (`/api/v1`, `/admin`, `/healthz`, `/readyz`, `/metrics`); SQL and Redis out; upstream HTTPS for ad hoc coordinates | W1, W2, L1 to L4, P1 to P6, N6 | `api/` |
+| worker | Executes queued jobs: scheduled and on-create refresh (two upstream calls per location inside the budget, upsert samples), nightly demo reset, 90 day sample retention | Redis queue in; upstream HTTPS and SQL out | W4, L1.5, A17, ADR 0012 | `api/` (same image, Celery entrypoint) |
+| beat | Emits the schedule: refresh every 15 minutes (interval adapts to the budget), demo reset and retention nightly | Redis queue out | W4.2, 06-operations | `api/` (same image) |
+| migrate | Applies migrations and the idempotent seed before the api rolls out | SQL | L2, Q4 | `api/` (same image, Helm pre-upgrade hook) |
+| web | The case study site: documents rendered from `docs/`, live demo against the API, operations page from `/ops/status`, walkthrough | HTTPS in; API out with the demo token | N1, N4 (demo), 08-walkthrough | `web/` |
+| PostgreSQL | System of record: catalogue, departures, bookings, travellers, partners, weather samples, settings, history tables | SQL; S3 for backups | N2, ADR 0007, 0012, 0014 | CloudNativePG cluster in `chart/` |
+| Redis | Short lived cache for ad hoc coordinates; Celery queue | Redis protocol | ADR 0005 | `chart/` |
 
-`weather` (adapter, cache, samples, daily summary), `locations` (list, seed, brackets),
-`catalog` (destination, package), `booking` (departure, booking, availability query), `core`
-(auth, errors, audit, health). `TODO (arc42 5.2)`: C4 component diagram and black box table once
-the code exists.
+### 5.2 Level 2: Django apps inside `api` (C4 level 3, to be verified against the code)
+
+```mermaid
+C4Component
+  Container_Boundary(api, "api") {
+    Component(core, "core", "Django app", "Token auth and roles, problem details, history (pghistory), health, settings table, pagination")
+    Component(weather, "weather", "Django app", "Upstream adapter (timeouts, retries, breaker, budget), ad hoc cache, WeatherSample, summarize_day, refresh tasks")
+    Component(locations, "locations", "Django app", "Location model and seed, time zone derivation, brackets (fixed and quantile), bracket edges setting")
+    Component(catalog, "catalog", "Django app", "DestinationType, Destination, Package with ordered destinations, derived danger")
+    Component(booking, "booking", "Django app", "Departure, Traveller, Partner, Booking; bookable search; booking service with row lock and idempotency; demo reset")
+  }
+  Rel(locations, weather, "reads samples for brackets; triggers refresh on create")
+  Rel(catalog, locations, "destination belongs to a location")
+  Rel(booking, catalog, "departures belong to packages; danger derived from destinations")
+  Rel(booking, weather, "weather aware filter reads summaries")
+  Rel(weather, core, "uses")
+  Rel(locations, core, "uses")
+  Rel(catalog, core, "uses")
+  Rel(booking, core, "uses")
+```
+
+| App | Responsibility | Key modules | Fulfils | Depends on |
+|---|---|---|---|---|
+| core | Auth (token, four roles, partner scope, demo partner), RFC 7807 handler, history registration, health endpoints, settings (bracket edges, agency time zone), shared pagination and test helpers | `auth.py`, `errors.py`, `history.py`, `health.py`, `settings_store.py` | N6, A16, ADR 0014 | Django, DRF, pghistory |
+| weather | Upstream client with timeouts, retries, circuit breaker and budget split; ad hoc cache; `WeatherSample` upsert; `summarize_day` (mean, min, max, daytime significant weather, local day by slot start); refresh tasks (scheduled, on create, manual); retention | `client.py`, `budget.py`, `cache.py`, `models.py`, `summary.py`, `tasks.py`, `views.py` | W1 to W4, A11 to A14, ADR 0005, 0012, 0013 | core |
+| locations | `Location` (IANA zone, derived when omitted; active; soft delete; delete guard), idempotent seed of the thirteen capitals, brackets endpoint (half-open edges, no-data group, stale mark, quantile mode), bracket edges endpoint | `models.py`, `seed.py`, `brackets.py`, `views.py` | L1 to L4, A4, A5, ADR 0004 | weather, core |
+| catalog | `DestinationType` reference list, `Destination` (danger 0 to 3, active, delete guard), `Package` (price per traveller, duration, ordered destinations), derived danger annotation with label | `models.py`, `danger.py`, `views.py` | P1, P2, P4, A6, A7, A10, A15, ADR 0003, 0011 | locations, core |
+| booking | `Departure` (status, capacity floor), `Traveller` (risk appetite), `Partner`, `Booking` (seats, snapshots, idempotency key, cancelled_by); bookable search (validation, one query, stable order, extras); booking service (`select_for_update`); departure cancel; demo reset task | `models.py`, `search.py`, `service.py`, `views.py`, `tasks.py` | P3, P5, P6, N4, A1 to A3, A16, A17, ADR 0002 | catalog, weather, core |
+
+Dependency rule: arrows point one way (booking → catalog → locations → weather → core); no
+app imports a dependent app. Enforced by review now; a lint rule once the code exists.
 
 ## 6. Runtime view
 

@@ -14,8 +14,8 @@ row per official subsection; the status column is updated with every change to
 | 3.1 Business context | Context diagram + table of partners with inputs and outputs | 02 §3.1 | done |
 | 3.2 Technical context | Channels and protocols, mapping of I/O to channels | 02 §3.2 | done |
 | 4 Solution strategy | Fundamental decisions and why | 02 §4 | done |
-| 5.1 Building blocks level 1 | Whitebox overview + blackbox table (purpose, interfaces) | 02 §5.1 | partial (diagram yes, table no) |
-| 5.2 Building blocks level 2 | Zoom into selected blocks | 02 §5.2 | later |
+| 5.1 Building blocks level 1 | Whitebox overview + blackbox table (purpose, interfaces) | 02 §5.1 | done |
+| 5.2 Building blocks level 2 | Zoom into selected blocks | 02 §5.2 | done from design; verify against code |
 | 6 Runtime view | Sequence per important scenario | 02 §6 | partial (data flows drawn, sequences after code) |
 | 7 Deployment view | Infrastructure, mapping of blocks to nodes | 02 §7 | partial (sizing and pod mapping) |
 | 8 Crosscutting concepts | Selected system-wide concepts | 02 §8 | done |
