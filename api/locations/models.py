@@ -4,6 +4,7 @@ Minimal here so that weather samples have something to point at; CRUD, seed, tim
 derivation and the delete guard arrive with B4.
 """
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -13,8 +14,12 @@ from core.models import TimeStampedModel
 class Location(TimeStampedModel):
     name = models.TextField()
     country_code = models.CharField(max_length=2, help_text="ISO 3166-1 alpha-2")
-    latitude = models.DecimalField(max_digits=8, decimal_places=5)
-    longitude = models.DecimalField(max_digits=8, decimal_places=5)
+    latitude = models.DecimalField(
+        max_digits=8, decimal_places=5, validators=[MinValueValidator(-90), MaxValueValidator(90)]
+    )
+    longitude = models.DecimalField(
+        max_digits=8, decimal_places=5, validators=[MinValueValidator(-180), MaxValueValidator(180)]
+    )
     timezone = models.TextField(help_text="IANA zone name, e.g. America/Lima")
     active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)

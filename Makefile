@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate makemigrations test test-fast lint fmt shell superuser psql env
+.PHONY: help up down logs worker-logs refresh ps build migrate seed makemigrations test test-fast lint fmt shell superuser psql env
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -37,6 +37,9 @@ build:           ## rebuild the api image
 
 migrate:         ## apply migrations
 	$(API_DB) python manage.py migrate --noinput
+
+seed:            ## insert the South American capitals that are missing (idempotent)
+	$(API_DB) python manage.py seed_locations
 
 makemigrations:  ## create migrations from model changes
 	$(API_DB) python manage.py makemigrations
