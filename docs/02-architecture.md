@@ -533,19 +533,75 @@ Decisions: ADR 0006, 0007, 0009; runbook: 06-operations.
 
 ## 8. Cross cutting concepts
 
-- Errors: RFC 7807 problem details on every non 2xx response.
-- Auth: token per user, one role per user: `ops`, `sales`, `partner` (scoped to its own
-  bookings), `finance` (00-domain.md section 5). Admin for `ops`.
-- History: per-table history tables filled by database triggers with the acting user and
-  request, "as of" reads (ADR 0014); soft delete on catalogue tables.
-- Idempotency: booking requests carry an idempotency key.
-- Rate limiting: per token on ad hoc weather requests; the upstream budget is split between
-  the scheduled refresh and ad hoc calls (W4, ADR 0005).
-- Time: UTC in storage, IANA zone per location, local days computed in code (ADR 0013).
-- Observability: structured JSON logs, OpenTelemetry traces, `/healthz` and `/readyz`,
-  Prometheus metrics when the monitoring stack is installed.
-- Configuration: environment variables only, documented in `.env.example`; operational settings
-  that operations change (bracket edges, agency time zone) live in a settings table.
+Concepts that apply to several building blocks, grouped as arc42 suggests. Each row names
+where the rule is decided.
+
+### 8.1 Domain
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Ubiquitous language | Client, Traveller, Location, Destination, Package, Departure, Booking, Danger score, Risk appetite, Bracket, Bookable: one meaning each, used in code, API and documents | 00-domain §4 |
+| Aggregates | Departure + Booking is one consistency boundary (the row lock); Package + ordered destinations another; Location + its samples a third | ADR 0002, 0012 |
+| Derived, not stored | Package danger, remaining seats, end date, daily summaries, brackets are computed at read time; the only copies are the booking snapshots (price, danger) that keep records immutable | ADR 0003, 0011, 0013; N2.2 |
+| Lifecycle | Deactivate (hidden from new use, data kept) is different from delete (refused while referenced, else soft delete); bookings and departures are cancelled, never deleted | L1.3, L1.4, P1.6, P2.5, P3.4 |
+| Money | `numeric(12,2)` + ISO 4217 code, per traveller; never floats | A7, A15; 03 §Standards |
+| Time | UTC in storage; IANA zone per location; local calendar day computed in code, slot assigned by its start; "today" for bookability is the agency's zone; tz data kept current | ADR 0013; A13, A16; F4 |
+
+### 8.2 API and user interface
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Contract | `/api/v1`, JSON, OpenAPI 3 schema at `/api/schema`, Swagger UI at `/api/docs`; breaking changes mean `/api/v2` | 04-api; 00-domain §3 (partners) |
+| Errors | RFC 7807 problem details on every non-2xx; validation errors name the field; internals never echoed; 429 and 503 carry `Retry-After` | N6.4; W1.5; W4.3 |
+| Validation | Two layers: database constraints (FK, UNIQUE, CHECK) and serializer validation that mirrors them | N2.1 |
+| Pagination and order | Page size 20, stable order on every list (explicit tie breakers) | P5.5 |
+| Filters | Extras only narrow a required result; absent parameters leave the required behaviour unchanged | P5.6; N4.5 |
+| Honest degradation | `source` (live, cached, stale), `partial`, sample counts, `observed_at`, `as_of`, `stale` marks; the consumer sees data quality, nothing is hidden | W1, W2, L3; ISO 25012 |
+| Admin | Django admin for `ops` only, same models and constraints as the API | ADR 0001 |
+| Case study site | Reads `docs/` and the API; CORS limited to its origin; acts as the `demo` partner | A17; 04-api |
+
+### 8.3 Security
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Identity and roles | Token per user, one role per user: `ops`, `sales`, `partner`, `finance`; 401 without a token, 403 outside the role's permissions | 00-domain §5; N6.1 |
+| Partner isolation | A partner token reads, writes and cancels only its own bookings; the demo partner is one of them | N6.2, N6.7; A17 |
+| Secrets | Kubernetes Secrets injected at deploy time; none in git, values files or images; rotation = replace and restart | N5.4, N6.3; 06-operations |
+| Rate limiting | Per-token limit on ad hoc weather requests; upstream budget split between refresh and ad hoc calls (bulkhead) | W4.3; ADR 0005 |
+| Personal data | Traveller name and email only; no payment data; access by role; erasure as an operations task, self-service in the roadmap | §2 Legal; 07-roadmap |
+| Supply chain | Pinned dependencies, scanned in CI; non-root images; images by commit SHA | N6.6; ADR 0009 |
+
+### 8.4 Resilience and performance
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Upstream adapter | One client behind an interface: timeouts, bounded retries with backoff and jitter, circuit breaker (open after repeated failures, probe to close), budget accounting per minute and month | ADR 0005; W4 |
+| Caching | Redis, cache-aside with TTL (10 min) keyed by coordinates rounded to 3 decimals, ad hoc only; expired values served as stale while a refresh is attempted; no second copy for known locations | ADR 0005 |
+| Scheduled work | Celery: idempotent tasks (upserts), `acks_late`, time limits, calls spread over the interval, interval lengthens when the budget would be exceeded, one location's failure never aborts the run | W4.2, W4.4; R2 |
+| Concurrency | `select_for_update` on the departure inside a transaction; idempotency keys per caller | ADR 0002; P6 |
+| Query discipline | One query per list endpoint (no N+1), index per named query, plans documented | N3.1; N2.6; P5.7 |
+| Retention | Weather samples 90 days; backups 14 days; demo bookings reset nightly; history tables unbounded in this iteration | ADR 0012; 06-operations |
+
+### 8.5 Development
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Structure | Four Django apps as bounded contexts plus `core`; thin views, logic in per-app `services`; one-way dependencies (booking → catalog → locations → weather → core) | §5.2; N3.3 |
+| Testing | Table tests for rules (daily summary, brackets), a concurrency test for the last seat, `assertNumQueries` on lists, a mocked upstream plus one live smoke test, a schema test against the data model | N3; N2.7; W3.5 |
+| Tooling | ruff, mypy, pytest in CI gating merges; Next.js App Router with shadcn/ui; code files under 200 lines | AGENTS.md; N3.3 |
+| Traceability | Requirement ids in tests and commits; ADRs with Addresses lines; arc42 checklist | 01 §2; ADR 0010 |
+| Configuration | Environment variables only (`.env.example` documents the names); operations-changed settings (bracket edges, agency zone) in a settings table | §7.3; A16; L4 |
+
+### 8.6 Operations
+
+| Concept | Rule | Decided in |
+|---|---|---|
+| Health | `/healthz` process, `/readyz` database and Redis; Kubernetes probes use both; traffic only after ready | N3.2; §7.2 |
+| Observability | Structured JSON logs with request id, user and partner; OpenTelemetry traces; Prometheus metrics (RED per endpoint, budget and breaker gauges) when the monitoring stack is installed; `/ops/status` for the site | N5.5; 04-api |
+| History | Per-table history tables filled by triggers with actor and request; "as of" reads for finance and audits | ADR 0014 |
+| Backup and restore | Nightly base backup plus WAL to Object Storage; restore drill recorded with its duration | N5.3; ADR 0007 |
+| Delivery | CI on every push to main; migrate job before rollout; rolling update with readiness gates; one-command rollback | §7.5; Q4 |
+| Runbook | Deploy, rollback, secrets, backups, demo reset, tz data, what to look at first | 06-operations |
 
 ## 9. Architecture decisions
 
