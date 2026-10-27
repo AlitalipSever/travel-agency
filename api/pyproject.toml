@@ -34,7 +34,12 @@ select = ["E", "F", "I", "B", "UP"]
 python_version = "3.13"
 strict = false
 warn_unused_ignores = true
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
 
 [tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
 testpaths = ["."]
 python_files = ["test_*.py"]
