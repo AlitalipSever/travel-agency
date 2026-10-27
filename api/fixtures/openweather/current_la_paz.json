@@ -5,39 +5,44 @@
   },
   "weather": [
     {
-      "id": 800,
-      "main": "Clear",
-      "description": "clear sky",
-      "icon": "03d"
+      "id": 500,
+      "main": "Rain",
+      "description": "light rain",
+      "icon": "10d"
     }
   ],
   "base": "stations",
   "main": {
-    "temp": 9.1,
-    "feels_like": 8.5,
-    "temp_min": 7.8999999999999995,
-    "temp_max": 10.5,
-    "pressure": 1013,
-    "humidity": 72
+    "temp": 13.56,
+    "feels_like": 12.49,
+    "temp_min": 13.56,
+    "temp_max": 13.56,
+    "pressure": 1016,
+    "humidity": 58,
+    "sea_level": 1016,
+    "grnd_level": 618
   },
   "visibility": 10000,
   "wind": {
-    "speed": 4.1,
-    "deg": 190
+    "speed": 5.14,
+    "deg": 280
+  },
+  "rain": {
+    "1h": 0.2
   },
   "clouds": {
     "all": 75
   },
-  "dt": 1761570000,
+  "dt": 1793111704,
   "sys": {
     "type": 1,
-    "id": 8691,
+    "id": 8648,
     "country": "BO",
-    "sunrise": 1761544800,
-    "sunset": 1761588000
+    "sunrise": 1793095033,
+    "sunset": 1793140514
   },
   "timezone": -14400,
-  "id": 0,
+  "id": 3911925,
   "name": "La Paz",
   "cod": 200
 }

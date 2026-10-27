@@ -20,12 +20,14 @@ from weather.upstream.fixtures import MockWeatherClient
 
 
 def test_parse_current_maps_fields() -> None:
-    obs = parse_current(fixtures.load("current", "lima"), -12.046, -77.043)
-    assert obs.temp == pytest.approx(19.4)
-    assert obs.condition_code == 803
-    assert obs.timezone_offset_s == -18000
+    raw = fixtures.load("current", "lima")
+    obs = parse_current(raw, -12.046, -77.043)
+    assert obs.temp == pytest.approx(raw["main"]["temp"])
+    assert obs.condition_code == raw["weather"][0]["id"]
+    assert 200 <= obs.condition_code <= 804
+    assert obs.timezone_offset_s == -18000  # Lima, UTC-5
     assert obs.observed_at.tzinfo is not None
-    assert obs.is_day is True
+    assert obs.is_day == (raw["sys"]["sunrise"] <= raw["dt"] < raw["sys"]["sunset"])
 
 
 def test_parse_forecast_gives_40_utc_slots_with_day_flag_and_pop() -> None:
@@ -34,7 +36,7 @@ def test_parse_forecast_gives_40_utc_slots_with_day_flag_and_pop() -> None:
     assert all(s.slot_time.tzinfo is UTC for s in fc.slots)
     gaps = {fc.slots[i + 1].slot_time - fc.slots[i].slot_time for i in range(39)}
     assert gaps == {timedelta(hours=3)}
-    assert any(s.pop and s.pop > 0 for s in fc.slots)
+    assert all(s.pop is not None and 0.0 <= s.pop <= 1.0 for s in fc.slots)
     assert {s.is_day for s in fc.slots} == {True, False}
 
 

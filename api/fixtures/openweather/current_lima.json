@@ -1,43 +1,45 @@
 {
   "coord": {
-    "lon": -77.043,
-    "lat": -12.046
+    "lon": -77.0428,
+    "lat": -12.0464
   },
   "weather": [
     {
-      "id": 803,
+      "id": 804,
       "main": "Clouds",
-      "description": "broken clouds",
-      "icon": "03d"
+      "description": "overcast clouds",
+      "icon": "04d"
     }
   ],
   "base": "stations",
   "main": {
-    "temp": 19.4,
-    "feels_like": 18.799999999999997,
-    "temp_min": 18.2,
-    "temp_max": 20.799999999999997,
-    "pressure": 1013,
-    "humidity": 72
+    "temp": 23.06,
+    "feels_like": 23.59,
+    "temp_min": 21.97,
+    "temp_max": 23.21,
+    "pressure": 1015,
+    "humidity": 83,
+    "sea_level": 1015,
+    "grnd_level": 989
   },
   "visibility": 10000,
   "wind": {
-    "speed": 4.1,
-    "deg": 190
+    "speed": 5.14,
+    "deg": 160
   },
   "clouds": {
-    "all": 75
+    "all": 100
   },
-  "dt": 1761570000,
+  "dt": 1793111466,
   "sys": {
-    "type": 1,
-    "id": 8691,
+    "type": 2,
+    "id": 2112741,
     "country": "PE",
-    "sunrise": 1761544800,
-    "sunset": 1761588000
+    "sunrise": 1793097438,
+    "sunset": 1793142393
   },
   "timezone": -18000,
-  "id": 0,
-  "name": "Lima",
+  "id": 3930376,
+  "name": "R\u00edmac",
   "cod": 200
 }

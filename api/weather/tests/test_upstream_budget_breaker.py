@@ -94,7 +94,9 @@ def test_gateway_raises_budget_exhausted(settings) -> None:  # noqa: ANN001
 
 def test_gateway_fetches_through_the_mock_client(settings) -> None:  # noqa: ANN001
     settings.OPENWEATHER_API_KEY = ""
+    from weather.upstream import fixtures
+
     obs = gateway.fetch_current(-12.046, -77.043)
-    assert obs.temp == pytest.approx(19.4)
+    assert obs.temp == pytest.approx(fixtures.load("current", "lima")["main"]["temp"])
     assert budget.used("adhoc") == 1
     assert breaker.state() == "closed"
