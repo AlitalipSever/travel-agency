@@ -79,3 +79,22 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return f"{self.username} ({self.role})"
+
+
+class Setting(TimeStampedModel):
+    """Operations-changed configuration: bracket edges, agency time zone, retention (06 §8).
+
+    Values are JSON so one table holds lists, strings and numbers; validation is per key in
+    clean(), the typed readers live in core/settings_store.py. A missing row means the default.
+    """
+
+    key = models.TextField(unique=True)
+    value = models.JSONField()
+
+    def clean(self) -> None:
+        from .settings_store import validate  # local import: store imports this module
+
+        self.value = validate(self.key, self.value)
+
+    def __str__(self) -> str:
+        return f"{self.key} = {self.value!r}"

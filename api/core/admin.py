@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import Partner, User
+from .models import Partner, Setting, User
 
 
 @admin.register(User)
@@ -23,3 +23,9 @@ class UserAdmin(DjangoUserAdmin):
 @admin.register(Partner)
 class PartnerAdmin(admin.ModelAdmin):
     list_display = ("name", "is_demo", "created_at")
+
+
+@admin.register(Setting)
+class SettingAdmin(admin.ModelAdmin):
+    list_display = ("key", "value", "updated_at")
+    readonly_fields = ("updated_at",)
