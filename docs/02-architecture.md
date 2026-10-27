@@ -436,27 +436,100 @@ sample retention (06-operations), rolling deploy with the migrate job (Q4).
 
 ## 7. Deployment view
 
+### 7.1 Infrastructure (level 1)
+
 ```mermaid
 flowchart LR
-  dns["Cloudflare DNS"] --> ing["ingress-nginx + cert-manager"]
-  subgraph node["k3s on one Hetzner ARM server"]
-    ing --> web["web"]
-    ing --> api["api"]
-    api --> pg[("PostgreSQL, CloudNativePG")]
-    api --> redis[("Redis")]
-    worker["worker"] --> redis
-    worker --> pg
-    beat["beat"] --> redis
-    pg -. "nightly backup" .-> s3[("Hetzner Object Storage")]
+  user["Browsers and partner systems"] --> dns["Cloudflare DNS, A record"]
+  dns --> fw["Hetzner Cloud firewall: 22, 80, 443"]
+  subgraph server["Hetzner CAX21, ARM, 4 vCPU, 8 GB, k3s single node"]
+    direction TB
+    subgraph nsing["namespace ingress-nginx, cert-manager"]
+      ing["ingress-nginx"]
+      cm["cert-manager"]
+    end
+    subgraph nsapp["namespace travel-agency"]
+      web["web deployment x1"]
+      api["api deployment x2"]
+      worker["worker deployment x1"]
+      beat["beat deployment x1"]
+      migrate["migrate job, pre-upgrade hook"]
+      redis[("redis x1")]
+    end
+    subgraph nspg["namespace cnpg-system + travel-agency"]
+      op["CloudNativePG operator"]
+      pg[("PostgreSQL cluster, 1 instance, PVC on the data volume")]
+    end
+    vol[("Hetzner volume, mounted for PVCs")]
   end
-  gh["GitHub Actions"] -- "buildx, push" --> ghcr[("ghcr.io")]
-  gh -- "helm upgrade" --> ing
-  tf["Terraform, hcloud"] -. "creates" .-> node
+  fw --> ing
+  ing --> web
+  ing --> api
+  api --> pg
+  api --> redis
+  worker --> redis
+  worker --> pg
+  beat --> redis
+  migrate --> pg
+  pg --- vol
+  pg -. "base backups and WAL, nightly" .-> s3[("Hetzner Object Storage, S3 API")]
+  cm -. "ACME HTTP-01" .-> le["Let's Encrypt"]
+  api -. "HTTPS" .-> owm["OpenWeatherMap"]
+  worker -. "HTTPS" .-> owm
+  gh["GitHub Actions"] -- "buildx arm64+amd64, push" --> ghcr[("ghcr.io")]
+  gh -- "helm upgrade over the Kubernetes API, deploy kubeconfig" --> server
+  tf["Terraform, hcloud provider"] -. "server, firewall, volume, cloud-init installs k3s" .-> server
+  nsapp -. "pull images, pull secret" .-> ghcr
 ```
 
-Values files: `values-hetzner.yaml` (this deployment), `values-local.yaml` (kind),
-`values-azure.yaml` (AKS with managed PostgreSQL and Redis; documented, not run). ADR 0006,
-0007, 0009. `TODO (arc42 7)`: node sizing, namespaces and the mapping of containers to pods.
+### 7.2 Mapping of building blocks to infrastructure
+
+| Building block | Runs as | Replicas | Requests / limits (start values) | Notes |
+|---|---|---|---|---|
+| api | Deployment, gunicorn, image `api` | 2 | 250m / 1 CPU, 384 / 768 MiB | Rolling update, readiness on `/readyz`, liveness on `/healthz`; two replicas so a rollout has no gap (Q4) |
+| worker | Deployment, Celery, image `api` | 1 | 100m / 500m, 256 / 512 MiB | Concurrency 2; `acks_late`, idempotent tasks |
+| beat | Deployment, Celery beat, image `api` | 1 | 50m / 200m, 128 / 256 MiB | Exactly one; schedule in code |
+| migrate | Job, image `api` | 1 per rollout | 100m / 500m, 256 / 512 MiB | Helm pre-upgrade hook: migrate + idempotent seed, rollout waits for it |
+| web | Deployment, Next.js, image `web` | 1 | 100m / 500m, 256 / 512 MiB | Static where possible; talks to the API with the demo token |
+| PostgreSQL | CloudNativePG `Cluster`, 1 instance | 1 | 500m / 1 CPU, 1 / 1.5 GiB | PVC on the Hetzner volume; backups to Object Storage, 14 days; restore drill (N5.3) |
+| Redis | Deployment, no persistence | 1 | 50m / 250m, 128 / 256 MiB | Cache and queue only; losing it loses nothing durable |
+| ingress-nginx, cert-manager | Helm charts, own namespaces | 1 each | defaults | TLS termination, Let's Encrypt issuer |
+| CloudNativePG operator | Helm chart, `cnpg-system` | 1 | defaults | Manages the cluster, backups, failover later |
+| optional kube-prometheus-stack | Helm chart, `monitoring` | 1 | about 1 to 1.5 GiB | Only if the Operations page needs real metrics; fits, but last |
+
+Budget on the node: about 5 to 6 GiB of 8 GiB in use with everything above except monitoring;
+k3s itself takes under 1 GiB. CPU is not the constraint.
+
+### 7.3 Node, network, storage, secrets
+
+- Node: one Hetzner CAX21 (ARM64), Ubuntu LTS, k3s installed by cloud-init with Traefik
+  disabled (ingress-nginx instead) and the embedded SQLite datastore (one node). SSH by key only.
+- Network: Hetzner Cloud firewall allows 22 (operator IPs), 80 and 443; everything else closed.
+  Inside the node, services talk over the cluster network without TLS (§3.2, revisit with a
+  second node). Egress: OpenWeatherMap, Let's Encrypt, ghcr.io, Object Storage.
+- Storage: a separate Hetzner volume holds the PVC data (PostgreSQL); the OS disk holds images
+  and k3s. Object Storage holds backups and WAL; retention 14 days.
+- Secrets: Kubernetes Secrets in `travel-agency` (OpenWeatherMap key, Django secret, Redis
+  password, ghcr pull secret); the database credentials are created by the operator. Nothing in
+  values files or git; `make secrets` creates them from the operator's shell.
+- Images: `ghcr.io/<owner>/travel-agency-api` and `-web`, tags = commit SHA and `latest`,
+  arm64 + amd64 (ADR 0009).
+
+### 7.4 Environments
+
+| Environment | Where | Values file | Differences |
+|---|---|---|---|
+| local | kind on a laptop (arm64) | `values-local.yaml` | PostgreSQL and Redis in cluster via the same chart; no TLS; `localhost` ingress; seed plus demo data |
+| hetzner | the node above | `values-hetzner.yaml` | This section; Let's Encrypt; backups on |
+| azure (documented, not run) | AKS, amd64 pool | `values-azure.yaml` | Managed PostgreSQL and Azure Cache for Redis instead of the in-cluster ones (CloudNativePG and the Redis deployment disabled), Azure ingress class, workload identity for secrets; application unchanged (ADR 0006) |
+
+### 7.5 Delivery
+
+Push to `main` → CI: ruff, mypy, pytest with PostgreSQL and Redis services → buildx images for
+arm64 and amd64, push with the SHA tag → `helm upgrade --install` against the cluster with a
+deploy kubeconfig held as a GitHub secret → the migrate job runs → api rolls out (two replicas,
+readiness gated) → smoke test on `/readyz` and one bookable query. Rollback: `helm rollback`.
+Decisions: ADR 0006, 0007, 0009; runbook: 06-operations.
 
 ## 8. Cross cutting concepts
 
