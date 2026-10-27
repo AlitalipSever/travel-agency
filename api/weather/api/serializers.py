@@ -31,3 +31,27 @@ class CurrentWeatherSerializer(serializers.Serializer):
     source = serializers.ChoiceField(choices=["live", "cached", "stale", "sample"])  # type: ignore[assignment]
     age_s = serializers.IntegerField()
     location_id = serializers.UUIDField(allow_null=True)
+
+
+class DaySummarySerializer(serializers.Serializer):
+    date = serializers.DateField()
+    temp_avg = serializers.FloatField(allow_null=True)
+    temp_min = serializers.FloatField(allow_null=True)
+    temp_max = serializers.FloatField(allow_null=True)
+    condition = serializers.CharField()
+    observed_samples = serializers.IntegerField()
+    forecast_samples = serializers.IntegerField()
+    # "partial" is also a BaseSerializer attribute; declared fields are collected by the
+    # metaclass, so the JSON key is fine at runtime (covered by tests).
+    partial = serializers.BooleanField()  # type: ignore[assignment]
+
+
+class ForecastSerializer(serializers.Serializer):
+    lat = serializers.FloatField()
+    lon = serializers.FloatField()
+    timezone = serializers.CharField()
+    as_of = serializers.DateTimeField()
+    source = serializers.ChoiceField(choices=["live", "cached", "stale", "sample"])  # type: ignore[assignment]
+    today = DaySummarySerializer(allow_null=True)
+    days = DaySummarySerializer(many=True)
+    location_id = serializers.UUIDField(allow_null=True)
