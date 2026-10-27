@@ -1,23 +1,31 @@
 # 08 Walkthrough
 
-Status: draft, 2026-10-26. Ten minutes, in this order. The site's walkthrough page follows the
-same sections.
+Status: reviewed against 00 to 07, 2026-10-27. Ten minutes, in this order; the site's
+walkthrough page follows the same sections and pulls its content from the other pages.
 
-1. **It runs.** Open the live site. Brackets page shows today's temperatures of the South
-   American capitals. Click one: five day forecast. 60 seconds.
-2. **Who is this for, and what did I ask first.** The stakeholder map, the four roles, the
-   traveller as a record not a user, and the questions I would put to the client with the
-   assumption I worked with (00-domain). Then the brief in three parts and the seventeen
-   assumptions. 90 seconds.
-3. **Architecture.** Context and container diagrams. Data flow for one weather request (cache
-   hit, miss, stale) and for one bookable query. 2 minutes.
-4. **Three decisions and their trade-offs.** Departure as the sellable unit; danger derived in
-   the query; cache and scheduled refresh instead of calling upstream per request. Each with
-   the option not taken. 2 minutes.
-5. **Production.** Terraform, Helm, CI/CD, operator managed PostgreSQL with backups, HTTPS,
-   probes and resources. The operations page with live numbers. Why k3s on Hetzner and how the
-   same chart goes to AKS. 2 minutes.
-6. **Extras.** Booking with a row lock and idempotency; suitability by traveller risk appetite;
-   weather aware filter. Demo one booking that sells out. 90 seconds.
-7. **What I left out and what comes next.** The roadmap page. 30 seconds.
-8. Questions.
+1. **It runs.** Open the live site. The brackets page shows today's temperatures of the
+   thirteen capitals grouped by bracket, with any `no_data` rows visible; click one for the
+   forecast: `today` separate from the five days, `partial` and sample counts shown. 60 s.
+2. **Who it is for, and what I asked first.** The stakeholder onion, the four roles and the
+   demo partner, the traveller as a record not a user, and the questions I would put to the
+   client with the assumption I worked with (00-domain §7). Then the brief in three parts and
+   the seventeen assumptions (01 §3). 90 s.
+3. **Architecture.** The one-page summary (02 §0): context and container views, the two data
+   flows (weather in on a schedule into PostgreSQL; the bookable search out of one query), and
+   R4: two sales, one seat, one 409. 2 min.
+4. **Three decisions and their trade-offs.** Departure as the sellable unit with a row lock
+   (ADR 0002); danger derived in the query, never stored (ADR 0003); known locations never
+   fetched on the request path, budget split and breaker (ADR 0005, 0012). Each with the
+   option not taken and the signal that would change it (07 §4). 2 min.
+5. **Honesty in the data.** `source`, `stale`, `partial`, sample counts, `observed_at`; 503
+   only when nothing is stored; the risks table (02 §11) and what is deliberately left out
+   (07 §2). 60 s.
+6. **Production, local first.** The same Helm chart on kind and on the server: migrate job,
+   rolling update, probes, operator-managed PostgreSQL with backups and a rehearsed restore,
+   trigger-based history, HTTPS. The operations page with live numbers (`/ops/status`). Why
+   k3s on Hetzner for about 10 EUR a month and how the same chart goes to AKS. 90 s.
+7. **Extras from the actors' jobs.** Booking with capacity, concurrency and idempotency (demo
+   one departure selling out and the 409); suitability by traveller risk appetite; the weather
+   aware filter with its "conditions now" note. 60 s.
+8. **What comes next.** The roadmap page: next two weeks and how the team would grow. 30 s.
+9. Questions.

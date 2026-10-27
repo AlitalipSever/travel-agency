@@ -1,44 +1,71 @@
 # 07 Roadmap
 
-Status: draft, 2026-10-26. Three lists, kept honest: what is done, what was left out on
-purpose, what comes next.
+Status: reviewed against 01 to 06, 2026-10-27. Four lists, kept honest: what is done, what
+was left out on purpose, what would come next, and what would make the design change.
 
-## Done
+## 1. Done
 
-Filled in as packages close (see 05-work-packages.md).
+Filled in as packages close (ids from 05-work-packages). A row is added when the package's
+acceptance checks pass in CI.
 
-## Deliberately left out
+| Package | Closed | Acceptance checks | Note |
+|---|---|---|---|
+| | | | |
+
+## 2. Deliberately left out
+
+Each item with why it is out and what it would take; the brief's scope (01 §4) and the
+decisions (adr/) are the reasons.
 
 | Item | Why | What it would take |
 |---|---|---|
-| Event streaming (Kafka) | No requirement needs an event bus yet; the refresh job and bookings are fine as tasks and transactions | Outbox table, a producer in the booking service, a consumer for notifications; Event Hubs or Redpanda in the chart |
-| High availability | One server is enough for the brief; HA is a platform step, not an application change | Second node, PostgreSQL with two instances, api replicas spread by anti affinity |
-| Payments, accounts, password flows | Out of the brief; large surface | A payment provider adapter and a customer identity model |
-| Multi tenancy | One agency in the brief | Tenant id on every table, row level security |
-| Internationalisation | One agency, one language in the brief; API payloads are language neutral | Translated labels (conditions, types) and localised formats behind an `Accept-Language` header |
-| Booking cut-off before departure | Whether a tour departing today is still bookable is the agency's policy; today it is | A cut-off in hours per package or globally, applied in the bookable rule and at booking time |
+| Event streaming (Kafka or an outbox) | No requirement needs fan-out yet; the refresh job and bookings are tasks and transactions; the events are named (00-domain §6) and the booking service is written behind an interface (ADR 0008) | Outbox table, a producer in the booking service, a consumer for notifications; Redpanda or Event Hubs in the chart |
+| High availability | One server is enough for the brief; HA is a platform step, not an application change (02 §11 risk 1) | Second node, PostgreSQL with two instances (one setting in CloudNativePG), api replicas spread by anti-affinity, beat on a lease |
+| Payments and refunds | Out of the brief; large surface and compliance | A payment provider adapter, a payment state on bookings, refund rules tied to cancellation fees |
+| Traveller self-service | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, and a front end |
+| GDPR access and erasure flows | Personal data is minimal (name, email) and erasure is an operations task today (02 §2 Legal) | Export and erasure endpoints that anonymise the traveller while keeping booking counts; retention rules on history tables |
+| Multi tenancy | One agency in the brief | Tenant id on every table, row level security, per-tenant settings |
+| Internationalisation | One agency, one language; API payloads are language neutral | Translated labels (conditions, types) and localised formats behind `Accept-Language` |
+| Booking cut-off before departure | Whether a tour departing today is still bookable is the agency's policy; today it is (A16) | A cut-off in hours per package or globally, applied in the bookable rule and at booking time |
 | Holds, waiting lists, cancellation fees | A real agency's first questions after booking works; each is a policy the client must set | A hold status with expiry on bookings, a waiting list per departure, a fee rule on cancellation |
-| Notifying travellers of a cancelled departure | Same channel question as the danger notice | Consumer of the departure cancellation that lists affected bookings for sales |
-| Notifying booked travellers when a destination's danger rises | Needs a notification channel and a policy; the change itself is audited and will raise an event (P2, ADR 0008) | Consumer of DestinationDangerChanged that finds affected bookings and informs sales |
-| Per-departure pricing and seasonal prices | One price per package is what the brief describes (A15) | A price on the departure overriding the package's, and a price history |
+| Notifying travellers of a cancelled departure or a raised danger | Needs a channel and a policy; the change is recorded and visible to sales (P2.2, P3.4) | A consumer of `DepartureCancelled` and `DestinationDangerChanged` that lists affected bookings and sends mail |
+| Per-departure and seasonal pricing | One price per package is what the brief describes (A15) | A price on the departure overriding the package's, and a price history |
 | Unit systems other than metric | Celsius is natural for the agency and its markets (A14) | A `units` query parameter converting at the edge |
-| Traveller self-service (role, booking UI) | The brief asks for a system that runs the agency; travellers book through staff and partners (00-domain §2) | A `traveller` role with registration, login and password flows, own-bookings scope, and a front end |
-| GDPR access and erasure flows | Personal data is minimal (name, email) and erasure is an operations task today | Export and erasure endpoints that anonymise the traveller while keeping booking counts; retention rules on history tables |
+| Precipitation probability in the daily label | A threshold is a judgement call (ADR 0013) | `pop` above a client-set threshold counts as rain |
+| Analytics and reporting (warehouse, star schema) | The system is transactional; reporting on it would compete with bookings for locks | An ELT feed from the tables and history into a warehouse with `fact_booking` and `dim_date`, `dim_package`, `dim_location`, `dim_partner` |
+| Managed cloud services for the demo | Cost and portability; an AKS profile is kept (ADR 0006) | Run `values-azure.yaml` with managed PostgreSQL and Redis |
+| Webhooks or an event feed for partners | No partner asked; the API is pull based | Outbox first, then signed webhooks per partner |
+| Bulk import of catalogue data | Operations manages a small catalogue by hand | CSV import with validation report |
 
-## Next two weeks, if this continued
+## 3. Next two weeks, if this continued
 
-1. Restore drill and a written RPO/RTO.
-2. Outbox and domain events for bookings; a notification consumer.
-3. Rate limiting and quotas on the public API.
-4. Second node and PostgreSQL replica; load test with k6 and the numbers in this file.
-5. A "same day last week" comparison on the brackets page, from the persisted weather samples.
-6. Contract tests against the OpenAPI schema; generated TypeScript client for the site.
-7. Precipitation probability in the daily condition rule (a slot with `pop` above a threshold
-   counts as rain), once the client says how cautious the label should be.
+In order of value to the client, each pointing at what it closes.
 
-## How this grows with a larger team
+1. Second node, PostgreSQL replica and beat on a lease: retires risk 1 (02 §11).
+2. Outbox and domain events for bookings, with a mail consumer for cancellations and danger
+   changes: closes the two notification rows above.
+3. Load test with k6 at the Q9 sizes; numbers recorded in 02 §10.2 and `docs/plans/`.
+4. GDPR export and erasure endpoints; retention policy for history tables.
+5. Booking cut-off and cancellation fees as settings, once the client states the policy.
+6. "Same day last week" comparison on the brackets page from the persisted samples.
+7. Contract tests against the OpenAPI schema and a generated TypeScript client for the site.
+8. Precipitation probability in the condition rule behind a client-set threshold.
 
-Module boundaries follow the Django apps: weather, locations, catalogue, booking. Each can be
-owned by one pair, each has its own tests and its own section in the ADR log. The chart stays
-one; values files multiply per environment. The first split into separate services would be the
-weather adapter, since its load profile (scheduled, upstream bound) differs from the API's.
+## 4. What would make the design change
+
+| Signal | Change | Prepared by |
+|---|---|---|
+| Catalogue in the tens of thousands and the derived danger shows in query plans | Stored, trigger-maintained danger column | ADR 0003 names it as the next step |
+| More than a few hundred locations | Paid upstream tier or a second provider behind the adapter | W4.2 adaptive interval buys time; Q7 isolates the adapter |
+| Partners need their own prices or quotas | Partner-scoped price lists and quotas on departures | Partner already a first-class table |
+| Travellers book themselves | Traveller role and identity flows | Traveller already a table; roles already a column |
+| Reporting demand from finance | Warehouse feed (row above) | History tables carry the change stream |
+
+## 5. How this grows with a larger team
+
+Module boundaries follow the Django apps: `weather`, `locations`, `catalog`, `booking`, each
+with its own models, services, tests and ADR section; the one-way dependency rule (02 §5.2)
+keeps them separable. The first split into its own service would be the weather adapter,
+whose load profile (scheduled, upstream bound) differs from the API's. The chart stays one;
+values files multiply per environment. Ownership: one pair per app, a platform pair for the
+chart, Terraform and CI, and the site with the backend pair that owns the API it demonstrates.
