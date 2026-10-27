@@ -197,3 +197,41 @@ class DepartureSerializer(serializers.ModelSerializer):
 class DeparturesSummarySerializer(serializers.Serializer):
     next = serializers.DictField(allow_null=True, read_only=True)
     planned_count = serializers.IntegerField(read_only=True)
+
+
+class BookableDepartureSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    starts_on = serializers.DateField(read_only=True)
+    ends_on = serializers.DateField(read_only=True)
+    capacity = serializers.IntegerField(read_only=True)
+    confirmed_seats = serializers.IntegerField(read_only=True)
+    remaining_seats = serializers.IntegerField(read_only=True)
+
+
+class BookableResultSerializer(serializers.ModelSerializer):
+    """One bookable package with only the departures that matched the query (P5.4)."""
+
+    danger = serializers.IntegerField(read_only=True)
+    danger_label = serializers.SerializerMethodField()
+    departures = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Package
+        fields = [
+            "id",
+            "name",
+            "price",
+            "currency",
+            "description",
+            "duration_days",
+            "danger",
+            "danger_label",
+            "departures",
+        ]
+
+    def get_danger_label(self, obj: Package) -> str | None:
+        return danger_label(getattr(obj, "danger", None))
+
+    def get_departures(self, obj: Package) -> Any:
+        rows = self.context["departures"].get(obj.pk, [])
+        return BookableDepartureSerializer(rows, many=True).data
