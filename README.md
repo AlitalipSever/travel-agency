@@ -34,4 +34,6 @@ Start at [docs/README.md](docs/README.md).
 
 ## Status
 
-Documents reviewed; build in progress on feature branches (develop integrates, main deploys).
+Build in progress on feature branches (develop integrates, main deploys). Done: B1 Django
+skeleton, L1 docker compose, B2 weather adapter with the current weather endpoint. See
+docs/07-roadmap.md §1 for the table.
