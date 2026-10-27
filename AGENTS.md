@@ -28,6 +28,10 @@ source of truth for scope; assumptions that fill its gaps are listed there and d
 - Containers: multi-stage Dockerfiles, non-root user, arm64 and amd64 images.
 - Kubernetes: one Helm chart under `chart/`, environment differences only in values files.
   Resources (requests, limits), readiness and liveness probes on every workload.
+- Layout: the folder structure lives in README.md and each top level folder's README; a
+  structural change updates them in the same commit.
+- Branches: `main` deploys, `develop` integrates, one `feature/<package-id>-<slug>` branch per
+  work package, merged by pull request.
 - Commits: small, imperative subject, body says why. No AI attribution lines.
 
 ## Reading order for a new agent
