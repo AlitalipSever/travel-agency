@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "core",
     "locations",
     "weather",
+    "catalogue",
 ]
 
 MIDDLEWARE = [

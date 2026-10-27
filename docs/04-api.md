@@ -118,9 +118,9 @@ temperature ascending (L3).
 | POST | `/destinations` | ops | `location_id`, `type_id`, `name`, `danger` (0 to 3), `description` |
 | GET, PATCH, DELETE | `/destinations/{id}` | all read, ops write | Danger changes are attributed; DELETE 409 listing the packages that use it (P2.5) |
 | GET | `/packages?active=&danger_max=&type=&max_price=&q=` | all | List with `danger` and `danger_label` per package (P4.3) |
-| POST | `/packages` | ops | `name`, `price`, `currency`, `description`, `duration_days`, `destinations[]` (ordered ids) |
+| POST | `/packages` | ops | `name`, `price`, `currency`, `description`, `duration_days`, `destination_ids[]` (ordered destination ids; empty list = draft) |
 | GET | `/packages/{id}` | all | Detail: ordered `destinations[]`, `danger` (null for a draft), `danger_label`, `departures_summary` (next departure, seats) |
-| PATCH | `/packages/{id}` | ops | Any field; `destinations[]` replaces the ordered list; `active` deactivates (P1.5, P1.6) |
+| PATCH | `/packages/{id}` | ops | Any field; `destination_ids[]` replaces the ordered list; `active` deactivates (P1.5, P1.6) |
 | DELETE | `/packages/{id}` | ops | Soft delete; 409 while any departure has bookings |
 
 Package representation:
