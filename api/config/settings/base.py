@@ -133,6 +133,16 @@ BREAKER_COOLDOWN_S = env.int("BREAKER_COOLDOWN_S", default=60)
 # Redis: ad hoc weather cache, budget and breaker state, Celery broker (ADR 0005).
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
+# Django cache on Redis: DRF throttles and short-lived application caches (separate key prefix).
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "KEY_PREFIX": "dj",
+    }
+}
+ADHOC_RATE_PER_MIN = env.int("ADHOC_RATE_PER_MIN", default=30)
+
 # Celery (02 §8.4): idempotent tasks, late acks, hard time limits, schedule in code.
 REFRESH_INTERVAL_S = env.int("REFRESH_INTERVAL_S", default=900)
 CELERY_BROKER_URL = REDIS_URL

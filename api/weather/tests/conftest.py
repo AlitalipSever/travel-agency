@@ -13,8 +13,10 @@ def fake_redis(monkeypatch: pytest.MonkeyPatch) -> fakeredis.FakeRedis:
     redis_client.redis_connection.cache_clear()
     monkeypatch.setattr(redis_client, "redis_connection", lambda: conn)
     # modules imported `redis_connection` by name; patch those references too
+    from weather import adhoc
     from weather.upstream import breaker, budget
 
     monkeypatch.setattr(budget, "redis_connection", lambda: conn)
     monkeypatch.setattr(breaker, "redis_connection", lambda: conn)
+    monkeypatch.setattr(adhoc, "redis_connection", lambda: conn)
     return conn
