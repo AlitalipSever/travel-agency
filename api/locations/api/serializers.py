@@ -30,3 +30,7 @@ class LocationSerializer(serializers.ModelSerializer):
         if len(value) != 2 or not value.isalpha():
             raise serializers.ValidationError("Two letter ISO 3166-1 code.")
         return value
+
+
+class BracketEdgesSerializer(serializers.Serializer):
+    edges = serializers.ListField(child=serializers.FloatField(), min_length=1, max_length=10)

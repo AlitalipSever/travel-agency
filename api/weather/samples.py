@@ -7,6 +7,7 @@ so writing stays simple and the rule lives in one place (ADR 0012, 0013).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -90,6 +91,16 @@ def latest_observation(location: Location) -> WeatherSample | None:
     )
 
 
+def latest_observations_for(locations: Sequence[Location]) -> dict[str, WeatherSample]:
+    """Newest observation per location in one query (PostgreSQL DISTINCT ON); keyed by id."""
+    rows = (
+        WeatherSample.objects.filter(location__in=locations, kind=SampleKind.OBSERVATION)
+        .order_by("location_id", "-slot_time")
+        .distinct("location_id")
+    )
+    return {str(r.location_id): r for r in rows}
+
+
 def samples_between(location: Location, start: datetime, end: datetime) -> QuerySet[WeatherSample]:
     """Samples with slot_time in [start, end), both kinds, oldest first."""
     return WeatherSample.objects.filter(
@@ -131,3 +142,7 @@ def finish_run(
 
 def last_run() -> RefreshRun | None:
     return RefreshRun.objects.order_by("-started_at").first()
+
+
+def last_finished_run() -> RefreshRun | None:
+    return RefreshRun.objects.filter(finished_at__isnull=False).order_by("-finished_at").first()
