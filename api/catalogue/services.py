@@ -7,15 +7,24 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
+from datetime import date
 from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 
+from core import settings_store
 from core.errors import Conflict
 
-from .models import Destination, DestinationType, Package, PackageDestination
+from .models import (
+    Departure,
+    DepartureStatus,
+    Destination,
+    DestinationType,
+    Package,
+    PackageDestination,
+)
 
 log = logging.getLogger(__name__)
 
@@ -139,7 +148,110 @@ def update_package(
 
 
 def soft_delete_package(package: Package) -> None:
-    """P1.6: soft delete. The "departures with bookings" guard (409) joins with B7/B9."""
+    """P1.6: refused while any departure has bookings; otherwise hidden, bookings stay visible."""
+    booked = package.departures.filter(bookings__isnull=False).distinct().count()
+    if booked:
+        raise Conflict(
+            f"{booked} departure(s) of this package have bookings; deactivate it instead.",
+            data={"departures_with_bookings": booked},
+        )
     package.deleted_at = dj_timezone.now()
     package.active = False
     package.save(update_fields=["deleted_at", "active", "updated_at"])
+
+
+# --- departures (P3) ---------------------------------------------------------------------
+
+
+def _seats(departure: Departure) -> tuple[int, int]:
+    """(confirmed, bookings of any status) read fresh from the database."""
+    row = Departure.objects.with_seats().get(pk=departure.pk)
+    return int(row.confirmed_seats), departure.bookings.count()  # type: ignore[attr-defined]
+
+
+def create_departure(package: Package, starts_on: date, capacity: int) -> Departure:
+    """P3.1: one departure per package and date (409 on a duplicate), capacity >= 1."""
+    if package.departures.filter(starts_on=starts_on).exists():
+        raise Conflict(
+            f"{package.name} already departs on {starts_on.isoformat()}.",
+            data={"starts_on": starts_on.isoformat()},
+        )
+    departure = Departure(package=package, starts_on=starts_on, capacity=capacity)
+    departure.full_clean()
+    departure.save()
+    return departure
+
+
+def update_departure(departure: Departure, data: dict[str, Any]) -> Departure:
+    """P3.3: capacity never below confirmed seats; the date moves only without bookings;
+    a cancelled departure is frozen."""
+    if departure.status == DepartureStatus.CANCELLED:
+        raise Conflict("A cancelled departure cannot be changed.")
+    confirmed, any_bookings = _seats(departure)
+    if "capacity" in data and data["capacity"] < confirmed:
+        raise Conflict(
+            f"Capacity cannot go below the {confirmed} confirmed seat(s).",
+            data={"confirmed_seats": confirmed, "requested_capacity": data["capacity"]},
+        )
+    if "starts_on" in data and data["starts_on"] != departure.starts_on and any_bookings:
+        raise Conflict("The date cannot change while the departure has bookings.")
+    if "starts_on" in data and (
+        departure.package.departures.exclude(pk=departure.pk)
+        .filter(starts_on=data["starts_on"])
+        .exists()
+    ):
+        raise Conflict(f"{departure.package.name} already departs on {data['starts_on']}.")
+    for field, value in data.items():
+        setattr(departure, field, value)
+    departure.full_clean()
+    departure.save()
+    return departure
+
+
+def delete_departure(departure: Departure) -> None:
+    """P3.4: deleted only without bookings; otherwise 409 pointing at cancel."""
+    if departure.bookings.exists():
+        raise Conflict(
+            "This departure has bookings; cancel it instead of deleting it.",
+            data={"bookings": departure.bookings.count()},
+        )
+    departure.delete()
+
+
+@transaction.atomic
+def cancel_departure(departure: Departure) -> Departure:
+    """P3.4: cancel the departure and its confirmed bookings (`departure_cancelled`) in one
+    transaction under the row lock the booking path also takes; idempotent."""
+    locked = Departure.objects.select_for_update().get(pk=departure.pk)
+    if locked.status == DepartureStatus.CANCELLED:
+        return locked
+    now = dj_timezone.now()
+    locked.status = DepartureStatus.CANCELLED
+    locked.cancelled_at = now
+    locked.save(update_fields=["status", "cancelled_at", "updated_at"])
+    locked.bookings.filter(status="confirmed").update(
+        status="cancelled", cancelled_by="departure_cancelled", cancelled_at=now, updated_at=now
+    )
+    return locked
+
+
+def departure_summaries(package_ids: Sequence[Any]) -> dict[Any, dict[str, Any]]:
+    """For each package: the next planned departure on or after today in the agency's zone
+    (A16) with its remaining seats, and the planned count. One query for the whole list."""
+    today = dj_timezone.now().astimezone(settings_store.agency_timezone()).date()
+    rows = (
+        Departure.objects.with_seats()
+        .filter(package_id__in=package_ids, status=DepartureStatus.PLANNED, starts_on__gte=today)
+        .order_by("package_id", "starts_on")
+        .only("package_id", "starts_on", "capacity")
+    )
+    out: dict[Any, dict[str, Any]] = {}
+    for r in rows:
+        entry = out.setdefault(r.package_id, {"next": None, "planned_count": 0})
+        entry["planned_count"] += 1
+        if entry["next"] is None:
+            entry["next"] = {
+                "starts_on": r.starts_on.isoformat(),
+                "remaining_seats": int(r.remaining_seats),  # type: ignore[attr-defined]
+            }
+    return out

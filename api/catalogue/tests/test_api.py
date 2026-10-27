@@ -157,4 +157,6 @@ def test_n3_1_package_list_query_count_is_bounded(ops, old_town, death_road) -> 
     with CaptureQueriesContext(connection) as ctx:
         r = ops.get(PKG)
     assert r.status_code == 200 and len(r.json()["results"]) == 12
-    assert len(ctx.captured_queries) <= 7, [q["sql"][:80] for q in ctx.captured_queries]
+    # token, count, packages, 4 prefetches, agency zone setting, departure summaries:
+    # 9 queries whatever the package count
+    assert len(ctx.captured_queries) <= 9, [q["sql"][:80] for q in ctx.captured_queries]

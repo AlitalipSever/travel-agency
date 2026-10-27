@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Max, Q
+from django.db.models import DateField, ExpressionWrapper, F, Max, Q, Sum, Value
+from django.db.models.functions import Coalesce
 
 from core.models import TimeStampedModel
 from locations.models import Location
@@ -135,3 +136,63 @@ class PackageDestination(models.Model):
 
     def __str__(self) -> str:
         return f"{self.package_id} #{self.position}"
+
+
+class DepartureStatus(models.TextChoices):
+    PLANNED = "planned", "Planned"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class DepartureQuerySet(models.QuerySet["Departure"]):
+    def with_seats(self) -> DepartureQuerySet:
+        """P3.2: confirmed and remaining seats from confirmed bookings, ends_on from the
+        package duration (ADR 0002, ADR 0011). Nothing stored."""
+        confirmed = Coalesce(
+            Sum("bookings__seats", filter=Q(bookings__status="confirmed")), Value(0)
+        )
+        return self.annotate(
+            confirmed_seats=confirmed,
+            remaining_seats=F("capacity") - confirmed,
+            ends_on=ExpressionWrapper(
+                F("starts_on") + F("package__duration_days") - Value(1),
+                output_field=DateField(),
+            ),
+        )
+
+
+class Departure(TimeStampedModel):
+    """One date on which a package runs, with its own capacity: the sellable unit (ADR 0002)."""
+
+    package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="departures")
+    starts_on = models.DateField()
+    capacity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    status = models.TextField(choices=DepartureStatus.choices, default=DepartureStatus.PLANNED)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    objects = DepartureQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["starts_on"]
+        constraints = [
+            models.UniqueConstraint(fields=["package", "starts_on"], name="departure_package_date"),
+            models.CheckConstraint(condition=Q(capacity__gte=1), name="departure_capacity_min_1"),
+            models.CheckConstraint(
+                condition=Q(status__in=[s.value for s in DepartureStatus]),
+                name="departure_status_valid",
+            ),
+            models.CheckConstraint(
+                condition=(Q(status=DepartureStatus.CANCELLED, cancelled_at__isnull=False))
+                | (~Q(status=DepartureStatus.CANCELLED) & Q(cancelled_at__isnull=True)),
+                name="departure_cancelled_at_iff_cancelled",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["starts_on"],
+                condition=Q(status=DepartureStatus.PLANNED),
+                name="departure_planned_start_idx",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.package_id} on {self.starts_on}"

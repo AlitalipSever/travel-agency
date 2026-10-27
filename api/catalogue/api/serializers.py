@@ -12,12 +12,14 @@ from ..models import (
     DANGER_MAX,
     DANGER_MIN,
     DESCRIPTION_MAX,
+    Departure,
     Destination,
     DestinationType,
     Package,
     PackageDestination,
     danger_label,
 )
+from ..services import departure_summaries
 
 
 class DestinationTypeSerializer(serializers.ModelSerializer):
@@ -120,6 +122,7 @@ class PackageSerializer(serializers.ModelSerializer):
     description = serializers.CharField(
         required=False, allow_blank=True, max_length=DESCRIPTION_MAX
     )
+    departures_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Package
@@ -135,6 +138,7 @@ class PackageSerializer(serializers.ModelSerializer):
             "danger_label",
             "destinations",
             "destination_ids",
+            "departures_summary",
             "created_at",
             "updated_at",
         ]
@@ -142,6 +146,14 @@ class PackageSerializer(serializers.ModelSerializer):
 
     def get_danger_label(self, obj: Package) -> str | None:
         return danger_label(getattr(obj, "danger", None))
+
+    def get_departures_summary(self, obj: Package) -> dict[str, Any]:
+        """Next planned departure on or after today (agency zone) and the planned count; the
+        view precomputes the map for a list so this costs one query, not one per package."""
+        summaries = self.context.get("departure_summaries")
+        if summaries is None:
+            summaries = departure_summaries([obj.pk])
+        return summaries.get(obj.pk, {"next": None, "planned_count": 0})
 
     def validate_currency(self, value: str) -> str:
         value = value.upper()
@@ -153,3 +165,35 @@ class PackageSerializer(serializers.ModelSerializer):
         if value < 0:
             raise serializers.ValidationError("Price cannot be negative.")
         return value
+
+
+class DepartureSerializer(serializers.ModelSerializer):
+    """Write: `starts_on`, `capacity`. Read adds the derived seats and `ends_on` (P3.2)."""
+
+    package_id = serializers.UUIDField(source="package.id", read_only=True)
+    ends_on = serializers.DateField(read_only=True)
+    confirmed_seats = serializers.IntegerField(read_only=True)
+    remaining_seats = serializers.IntegerField(read_only=True)
+    capacity = serializers.IntegerField(min_value=1)
+
+    class Meta:
+        model = Departure
+        fields = [
+            "id",
+            "package_id",
+            "starts_on",
+            "ends_on",
+            "capacity",
+            "confirmed_seats",
+            "remaining_seats",
+            "status",
+            "cancelled_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "status", "cancelled_at", "created_at", "updated_at"]
+
+
+class DeparturesSummarySerializer(serializers.Serializer):
+    next = serializers.DictField(allow_null=True, read_only=True)
+    planned_count = serializers.IntegerField(read_only=True)

@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Destination, DestinationType, Package, PackageDestination
+from .models import Departure, Destination, DestinationType, Package, PackageDestination
 
 
 @admin.register(DestinationType)
@@ -26,9 +26,25 @@ class PackageDestinationInline(admin.TabularInline):
     autocomplete_fields = ("destination",)
 
 
+class DepartureInline(admin.TabularInline):
+    model = Departure
+    extra = 0
+    fields = ("starts_on", "capacity", "status", "cancelled_at")
+    readonly_fields = ("status", "cancelled_at")
+    ordering = ("starts_on",)
+
+
+@admin.register(Departure)
+class DepartureAdmin(admin.ModelAdmin):
+    list_display = ("package", "starts_on", "capacity", "status", "cancelled_at")
+    list_filter = ("status",)
+    search_fields = ("package__name",)
+    date_hierarchy = "starts_on"
+
+
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
     list_display = ("name", "price", "currency", "duration_days", "active", "deleted_at")
     list_filter = ("active", "currency")
     search_fields = ("name",)
-    inlines = [PackageDestinationInline]
+    inlines = [PackageDestinationInline, DepartureInline]
