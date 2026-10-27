@@ -182,16 +182,25 @@ names, coordinates decimal degrees (WGS 84), errors RFC 7807 problem details.
 
 ## 4. Solution strategy
 
-- Weather comes through one adapter. Known locations are refreshed by a scheduled job into
-  PostgreSQL and read from there; ad hoc coordinates are fetched on miss and cached briefly in
-  Redis (ADR 0005, 0012); daily summaries follow ADR 0013.
-- The product model separates the catalogue (package, destination) from the sellable unit
-  (departure: package + date + capacity). Bookings reduce remaining seats under a row lock
-  (ADR 0002).
-- Derived values (package danger, remaining seats) are computed in queries, not stored, until a
-  measured need says otherwise (ADR 0003).
-- Everything is a container; one Helm chart; environment differences live in values files only
-  (ADR 0006).
+The strategies below answer the quality goals of §1.2 in their order and the driving forces of
+§1.1; each points at the decision that argues it.
+
+| Goal or concern | Strategy | Decided in |
+|---|---|---|
+| 1 Reliability toward the upstream | Known locations are never fetched on the request path: a scheduled job (and an immediate one on create) writes slots and observations to PostgreSQL inside a call budget, the API reads from there. Ad hoc coordinates are fetched on miss and cached briefly in Redis. Degrade honestly: stale values with their age, `partial` days with sample counts, 503 with Retry-After only when nothing is stored. Bulkhead: the budget is split between the refresh and ad hoc calls, callers are rate limited, a circuit breaker fails fast | ADR 0005, 0012; W1, W2, W4 |
+| 2 Correctness of the product model | The departure (package + date + capacity) is the sellable unit; a booking takes a row lock on it and carries an idempotency key. Derived values (package danger, remaining seats, end date) are computed in queries, not stored, so nothing goes stale; bookings keep price and danger as snapshots so records stay immutable. Local calendar days from UTC storage and IANA zones | ADR 0002, 0003, 0011, 0013; P3 to P6, A13 |
+| 3 Operability | Infrastructure from code (Terraform), application as one Helm chart with values per environment, CI builds multi-arch images and deploys on push; liveness and readiness probes; an operations status with cache, refresh, budget and breaker state; operator-managed PostgreSQL with nightly backups and a rehearsed restore | ADR 0006, 0007, 0009; N5 |
+| 4 Security | One token per user, one role per user (`ops`, `sales`, `partner`, `finance`); partner data isolated by scope, the live demo runs as a `demo` partner; secrets injected at deploy time; every write attributed in trigger-filled history tables; problem details never leak internals; non-root images, pinned and scanned dependencies | ADR 0014; N6, A17; 00-domain §5 |
+| 5 Maintainability | Four Django apps as bounded contexts (`weather`, `locations`, `catalog`, `booking`) plus `core`; thin views, logic in per-app services, the upstream behind one adapter interface; table tests for the rules (summary, brackets), concurrency tests for booking; requirements with acceptance checks and ADRs with Addresses lines keep code and documents traceable; lint, types and tests gate every merge | ADR 0001, 0010; N2, N3 |
+
+Decomposition: the four apps follow the four jobs in 00-domain §3 and the four requirement
+groups (W, L, P, N); each owns its models, services and tests and can be split into its own
+service later, the weather adapter first (07-roadmap).
+
+Deliberately not done, and why: no event bus yet (nothing needs fan-out; the outbox path is
+designed in, ADR 0008); no stored derived columns (no measured cost yet, ADR 0003); no managed
+cloud services for the demo (cost and portability, with an AKS profile kept, ADR 0006); no
+traveller-facing role (the brief asks for a system that runs the agency, 00-domain §2).
 
 ## 5. Building block view
 
