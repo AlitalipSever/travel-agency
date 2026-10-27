@@ -1,18 +1,20 @@
 # Case study site (W1). Multi-stage: install, build, then a minimal standalone runtime as a
-# non-root user. Build with: docker build -t travel-agency-web web/
+# non-root user. The build context is the repository root so that docs/ can be read at build
+# time: docker build -f web/Dockerfile -t travel-agency-web .
 FROM node:24-alpine AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY docs /docs
+COPY web .
 RUN pnpm build
 
 FROM node:24-alpine AS runtime
