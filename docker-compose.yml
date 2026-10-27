@@ -36,7 +36,7 @@ services:
       context: ./api
       args: {INSTALL_DEV: "1"}
     image: travel-agency-api:dev
-    command: ["python", "manage.py", "migrate", "--noinput"]
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py seed_locations"]
     env_file: api/.env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
@@ -84,7 +84,7 @@ services:
 
   beat:
     image: travel-agency-api:dev
-    command: ["celery", "-A", "config", "beat", "-l", "info"]
+    command: ["celery", "-A", "config", "beat", "-l", "info", "-s", "/tmp/celerybeat-schedule"]
     env_file: api/.env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.local
