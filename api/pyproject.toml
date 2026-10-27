@@ -4,10 +4,24 @@ version = "0.1.0"
 description = "Travel agency backend: weather, locations by temperature bracket, tour packages with dated departures and bookings."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-dependencies = []
+dependencies = [
+    "django~=5.2",
+    "django-environ>=0.14.0",
+    "djangorestframework>=3.18.3",
+    "drf-spectacular>=0.30.0",
+    "gunicorn>=26.2.0",
+    "psycopg[binary]>=3.3.6",
+]
 
 [dependency-groups]
-dev = []
+dev = [
+    "django-stubs>=6.1.2",
+    "djangorestframework-stubs>=3.18.1",
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff>=0.17.3",
+]
 
 [tool.ruff]
 line-length = 100
