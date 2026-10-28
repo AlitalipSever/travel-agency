@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down images-push secrets secrets-check deploy
+.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down images-push secrets secrets-check deploy k8s-demo demo-token k8s-logs
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -138,3 +138,15 @@ secrets-check:   ## show that the application Secret exists and which keys it ho
 deploy:          ## helm upgrade --install the chart with TAG (default: HEAD) and VALUES
 	helm upgrade --install travel-agency chart -n $(NAMESPACE) --create-namespace -f $(VALUES) --set image.tag=$(TAG) --wait --timeout 10m
 	helm -n $(NAMESPACE) history travel-agency | tail -3
+
+k8s-demo:        ## seed the demo data in the cluster (prints the demo tokens once)
+	kubectl -n $(NAMESPACE) exec deploy/travel-agency-api -- python manage.py seed_demo
+
+demo-token:      ## store the demo partner token in the Secret and restart web (prompts)
+	@printf 'Demo partner token: '; read -rs DPT; echo; \
+	kubectl -n $(NAMESPACE) patch secret travel-agency-app -p "{\"stringData\":{\"DEMO_PARTNER_TOKEN\":\"$$DPT\"}}" >/dev/null; \
+	kubectl -n $(NAMESPACE) rollout restart deploy/travel-agency-web; \
+	kubectl -n $(NAMESPACE) rollout status deploy/travel-agency-web --timeout=120s
+
+k8s-logs:        ## follow api, worker and beat logs in the cluster
+	kubectl -n $(NAMESPACE) logs -f -l 'app.kubernetes.io/component in (api,worker,beat)' --max-log-requests 6 --tail=50
