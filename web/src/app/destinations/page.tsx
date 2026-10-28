@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { getBrackets, getLocations } from "@/lib/agency-data";
 import { DestinationCard, type CityWeather } from "@/components/agency/destination-card";
-import { ExploreMap } from "@/components/agency/explore-map";
+import { WorldMap } from "@/components/agency/world-map";
 
 export const metadata: Metadata = { title: "Destinations" };
 
@@ -26,7 +26,7 @@ export default async function DestinationsPage() {
         Thirteen capitals in South America. Click a city on the map for its page, or any other point to see the weather there right now.
       </p>
       <div className="mt-8">
-        <ExploreMap />
+        <WorldMap />
       </div>
       <h2 className="mt-14 text-2xl font-semibold tracking-tight">Our cities</h2>
       <p className="mt-1 text-muted-foreground">The temperature is the latest reading; open a city for the five day forecast.</p>
