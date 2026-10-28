@@ -9,7 +9,7 @@ will provide; "recorded" means a dated line in the tables of this file.
 |---|---|---|---|---|
 | compose | laptop, Docker | `make up`, `make test`, `make seed`, `make demo` | `.env` from `.env.example` | http://localhost:8000 (api), http://localhost:3000 (web) |
 | kind | laptop, Kubernetes in Docker | `make kind-up`, `make kind-deploy`, `make kind-down` | `chart/values-local.yaml` | http://localhost (ingress), no TLS |
-| hetzner | one CAX21, k3s | `export KUBECONFIG=...`; `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | `https://<name>.<domain>`; before the domain exists `https://<ip>.sslip.io` (P8) |
+| hetzner | one CAX21, k3s | `export KUBECONFIG=...`; `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | `https://travel-agency.<domain>` (Cloudflare DNS, A record, DNS only) |
 | azure | AKS, documented profile only | | `chart/values-azure.yaml` | |
 
 ## 2. Deploy
