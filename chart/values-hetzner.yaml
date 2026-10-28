@@ -1,0 +1,10 @@
+# One k3s node on Hetzner (06-operations §1). Image tag is given per release.
+host: travel-agency.asever.dev
+ingress:
+  clusterIssuer: letsencrypt-prod
+config:
+  DJANGO_ALLOWED_HOSTS: travel-agency.asever.dev
+  NEXT_PUBLIC_API_URL: https://travel-agency.asever.dev
+postgres:
+  storage:
+    hostPath: /mnt/data/postgres

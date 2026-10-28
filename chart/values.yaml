@@ -1,0 +1,79 @@
+# Defaults for every environment. Per-environment files (values-hetzner.yaml, values-local.yaml)
+# override only what differs. Secrets are never here: the release reads the Secret named in
+# `secret.name`, created once with `make secrets` (06-operations §4).
+
+image:
+  registry: ghcr.io/alitalipsever
+  tag: latest                      # set per release: --set image.tag=<sha>
+  pullPolicy: IfNotPresent
+
+secret:
+  name: travel-agency-app          # keys: DJANGO_SECRET_KEY, OPENWEATHER_API_KEY, DATABASE_URL, DEMO_PARTNER_TOKEN
+
+# Public host; the Ingress routes /api, /admin and /static to the api, everything else to web.
+host: travel-agency.example.com
+ingress:
+  className: nginx
+  tls: true
+  clusterIssuer: letsencrypt-staging
+  tlsSecretName: travel-agency-tls
+
+# Non-secret settings (06-operations §8), rendered into a ConfigMap and read with envFrom.
+config:
+  DJANGO_DEBUG: "false"
+  DJANGO_LOG_LEVEL: INFO
+  REDIS_URL: redis://travel-agency-redis:6379/0
+  REFRESH_INTERVAL_S: "900"
+  UPSTREAM_REFRESH_SHARE: "40"
+  UPSTREAM_ADHOC_SHARE: "8"
+  ADHOC_RATE_PER_MIN: "30"
+  BREAKER_FAILURES: "5"
+  BREAKER_COOLDOWN_S: "60"
+  API_URL: http://travel-agency-api:8000
+
+# Resources follow 02-architecture §7.2 (start values).
+api:
+  replicas: 2
+  resources:
+    requests: {cpu: 250m, memory: 384Mi}
+    limits: {cpu: "1", memory: 768Mi}
+worker:
+  replicas: 1
+  concurrency: 2
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+beat:
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 200m, memory: 256Mi}
+migrate:
+  seed: true                       # idempotent seed after migrate (locations, destination types)
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+web:
+  replicas: 1
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+redis:
+  image: redis:7-alpine
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+postgres:
+  # builtin: one StatefulSet with a PersistentVolume (ADR 0007 fallback). cnpg: CloudNativePG
+  # Cluster (P3); the chart then renders no StatefulSet.
+  mode: builtin
+  image: postgres:16-alpine
+  database: travel
+  user: travel
+  storage:
+    size: 10Gi
+    # hostPath on the node's data volume (P1); a storageClass replaces it on kind or AKS.
+    hostPath: /mnt/data/postgres
+    storageClassName: ""
+  resources:
+    requests: {cpu: 500m, memory: 1Gi}
+    limits: {cpu: "1", memory: 1536Mi}
