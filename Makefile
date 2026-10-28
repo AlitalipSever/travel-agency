@@ -75,7 +75,7 @@ web-build:       ## production build of the site
 	cd web && pnpm install && pnpm build
 
 web-lint:        ## eslint + type check of the site
-	cd web && pnpm lint && pnpm exec tsc --noEmit
+	cd web && pnpm lint && pnpm exec next typegen && pnpm exec tsc --noEmit
 
 # Platform (docs/06-operations.md §1, §2). Laptop targets; KUBECONFIG must point at the cluster.
 KUBECONFIG ?= $(HOME)/.kube/travel-agency.yaml
