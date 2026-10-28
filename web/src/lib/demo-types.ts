@@ -36,6 +36,21 @@ export type DaySummary = {
   partial: boolean;
 };
 
+export type CurrentWeather = {
+  lat: number;
+  lon: number;
+  timezone: string;
+  temp: number;
+  condition: string;
+  condition_code: number;
+  humidity: number | null;
+  wind_speed: number | null;
+  observed_at: string;
+  source: "sample" | "cached" | "live" | "stale";
+  age_s: number;
+  location_id: string | null;
+};
+
 export type ForecastResponse = {
   lat: number;
   lon: number;

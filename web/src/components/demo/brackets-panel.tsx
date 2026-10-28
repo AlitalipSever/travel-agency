@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { demoFetch, DemoError } from "@/lib/demo-client";
 import type { BracketsResponse, Location } from "@/lib/demo-types";
 import { bracketColour, onSpectrum } from "@/lib/spectrum";
-import { SouthAmericaMap, type MapPoint } from "@/components/demo/map";
+import { SouthAmericaMap, type Coordinate, type MapPoint } from "@/components/demo/map";
 import { ForecastPanel } from "@/components/demo/forecast-panel";
+import { CurrentWeatherPanel } from "@/components/demo/current-weather-panel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,6 +20,7 @@ export function BracketsPanel() {
   const [locations, setLocations] = useState<Record<string, Location>>({});
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [pick, setPick] = useState<Coordinate | null>(null);
 
   const query = mode === "quantile" ? `?mode=quantile&buckets=${buckets}` : "";
 
@@ -60,8 +62,8 @@ export function BracketsPanel() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <div>
-        <SouthAmericaMap points={points} selected={selected} onSelect={setSelected} />
-        <p className="label-mono mt-2 text-muted-foreground">Map: Natural Earth via world-atlas, public domain. Dashed ring: stale or no reading.</p>
+        <SouthAmericaMap points={points} selected={selected} onSelect={setSelected} pick={pick} onPick={setPick} />
+        <p className="label-mono mt-2 text-muted-foreground">Map: Natural Earth via world-atlas, public domain. Dashed ring: stale or no reading. Click a point for its forecast, anywhere else for the current weather there.</p>
       </div>
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -117,6 +119,7 @@ export function BracketsPanel() {
           </ol>
         ) : null}
         <ForecastPanel key={selected ?? "none"} locationId={selected} name={selected ? locations[selected]?.name : undefined} />
+        <CurrentWeatherPanel pick={pick} onPick={setPick} />
       </div>
     </div>
   );

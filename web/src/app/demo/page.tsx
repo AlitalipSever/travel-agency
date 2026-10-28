@@ -20,7 +20,7 @@ export default function DemoPage() {
         <section>
           <h2 className="text-xl font-medium tracking-tight">Locations by temperature bracket</h2>
           <p className="mt-1 mb-5 max-w-2xl text-sm text-muted-foreground">
-            Thirteen capitals, each in exactly one half-open bracket by its latest observation. Fixed edges come from the settings table; quantile mode derives them from today&apos;s readings so no bracket is empty. Stale readings and locations without a reading are shown, not hidden.
+            Thirteen capitals, each in exactly one half-open bracket by its latest observation. Fixed edges come from the settings table; quantile mode derives them from today&apos;s readings so no bracket is empty. Stale readings and locations without a reading are shown, not hidden. Click a point for its forecast, or any other place on the map for the current weather at that coordinate through the ad hoc path (cache, live, stale, 503).
           </p>
           <BracketsPanel />
         </section>
