@@ -1,0 +1,21 @@
+# ingress-nginx on the single k3s node (05-work-packages P2). Only values that differ from
+# the chart defaults. Installed by `make bootstrap`.
+controller:
+  replicaCount: 1
+  service:
+    # k3s servicelb binds a LoadBalancer Service to the node's ports 80 and 443.
+    type: LoadBalancer
+    # Keep the visitor's source address instead of the node's.
+    externalTrafficPolicy: Local
+  config:
+    # The node is reached directly (no proxy in front), so forwarded headers are not trusted.
+    use-forwarded-headers: "false"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  admissionWebhooks:
+    # Rejects invalid Ingress objects at apply time.
+    enabled: true

@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint
+.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -76,3 +76,29 @@ web-build:       ## production build of the site
 
 web-lint:        ## eslint + type check of the site
 	cd web && pnpm lint && pnpm exec tsc --noEmit
+
+# Platform (docs/06-operations.md §1, §2). Laptop targets; KUBECONFIG must point at the cluster.
+KUBECONFIG ?= $(HOME)/.kube/travel-agency.yaml
+export KUBECONFIG
+
+infra-plan:      ## terraform plan for the Hetzner server (needs infra/terraform/.env)
+	cd infra/terraform && set -a && . ./.env && set +a && terraform init -input=false >/dev/null && terraform plan -input=false
+
+infra-apply:     ## terraform apply (asks for confirmation)
+	cd infra/terraform && set -a && . ./.env && set +a && terraform apply -input=false
+
+bootstrap:       ## ingress-nginx, cert-manager and the Let's Encrypt issuers on the cluster (idempotent)
+	helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null
+	helm repo add jetstack https://charts.jetstack.io >/dev/null
+	helm repo update >/dev/null
+	helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace -f infra/k8s/ingress-nginx.values.yaml --wait
+	helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace -f infra/k8s/cert-manager.values.yaml --wait
+	kubectl apply -f infra/k8s/cluster-issuers.yaml
+	kubectl get clusterissuer
+
+hello-up:        ## temporary hello page on the public host (proves DNS, ingress, certificate)
+	kubectl apply -f infra/k8s/hello/hello.yaml
+	kubectl get certificate -n default
+
+hello-down:      ## remove the hello page (the application chart takes over the host)
+	kubectl delete -f infra/k8s/hello/hello.yaml --ignore-not-found

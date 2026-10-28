@@ -28,6 +28,8 @@ acceptance checks pass in CI.
 | W5 Operations page | 2026-10-28 (PR #17) | Live numbers match `/ops/status`, read every 30 s | Shares drawn on the thermal scale |
 | W6 Walkthrough | 2026-10-28 (PR #18, #20) | The nine steps of 08 as a keyboard driven deck with a ten minute clock | Pulls the demo, status and summary into the steps |
 | B9 Booking | 2026-10-28 (PR #12) | P6.1 to P6.6, N6.2 with two partner tokens; P6.2 concurrency test, 20 rounds of two threads on the last seat | P6.7 attribution lands with B11; `/partners` endpoint deferred (admin creates partners) |
+| P1 Server and k3s | 2026-10-28 (PR #25) | `kubectl get nodes` from the laptop; firewall 22 and 6443 from the operator only; data volume at `/mnt/data` | Terraform, one CAX21, pinned k3s, Traefik disabled; state and token local |
+| P2 Ingress and certificates | 2026-10-28 | Hello page at `https://travel-agency.asever.dev` with a Let's Encrypt certificate; staging issuer rehearsed first; risk 5 of 02 §11 retired | ingress-nginx and cert-manager by Helm (`make bootstrap`); the chart takes the host in P5 |
 
 ## 2. Deliberately left out
 
