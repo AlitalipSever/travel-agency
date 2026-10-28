@@ -1,0 +1,31 @@
+# Celery beat: the schedule. Exactly one instance, replaced with Recreate so two beats never
+# overlap (two refreshes per interval, 06-operations §10).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ta.name" . }}-beat
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ta.selector" (dict "ctx" . "component" "beat") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ta.selector" (dict "ctx" . "component" "beat") | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: beat
+          image: {{ include "ta.apiImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "config", "beat", "-l", "info", "-s", "/tmp/celerybeat-schedule"]
+          {{- include "ta.envFrom" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.beat.resources | nindent 12 }}

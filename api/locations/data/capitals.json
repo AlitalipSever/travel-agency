@@ -1,0 +1,19 @@
+{
+  "source": "GeoNames (geonames.org) city centre coordinates, rounded to 4 decimals; IANA zone names from the tz database. Compiled 2026-10-27 for the seed (L2, A5).",
+  "note": "Twelve sovereign states' capitals plus La Paz, Bolivia's seat of government. Cayenne (French Guiana, a region of France) is excluded on purpose.",
+  "locations": [
+    {"name": "Buenos Aires", "country_code": "AR", "latitude": -34.6037, "longitude": -58.3816, "timezone": "America/Argentina/Buenos_Aires"},
+    {"name": "Sucre", "country_code": "BO", "latitude": -19.0333, "longitude": -65.2627, "timezone": "America/La_Paz"},
+    {"name": "La Paz", "country_code": "BO", "latitude": -16.5000, "longitude": -68.1500, "timezone": "America/La_Paz"},
+    {"name": "Brasília", "country_code": "BR", "latitude": -15.7797, "longitude": -47.9297, "timezone": "America/Sao_Paulo"},
+    {"name": "Santiago", "country_code": "CL", "latitude": -33.4569, "longitude": -70.6483, "timezone": "America/Santiago"},
+    {"name": "Bogotá", "country_code": "CO", "latitude": 4.6097, "longitude": -74.0817, "timezone": "America/Bogota"},
+    {"name": "Quito", "country_code": "EC", "latitude": -0.2299, "longitude": -78.5249, "timezone": "America/Guayaquil"},
+    {"name": "Georgetown", "country_code": "GY", "latitude": 6.8045, "longitude": -58.1553, "timezone": "America/Guyana"},
+    {"name": "Asunción", "country_code": "PY", "latitude": -25.2867, "longitude": -57.6470, "timezone": "America/Asuncion"},
+    {"name": "Lima", "country_code": "PE", "latitude": -12.0432, "longitude": -77.0282, "timezone": "America/Lima"},
+    {"name": "Paramaribo", "country_code": "SR", "latitude": 5.8664, "longitude": -55.1668, "timezone": "America/Paramaribo"},
+    {"name": "Montevideo", "country_code": "UY", "latitude": -34.9033, "longitude": -56.1882, "timezone": "America/Montevideo"},
+    {"name": "Caracas", "country_code": "VE", "latitude": 10.4880, "longitude": -66.8792, "timezone": "America/Caracas"}
+  ]
+}

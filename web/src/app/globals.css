@@ -1,0 +1,183 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Spectral: a thermal spectrum read as a scale (cool = low, warm = high). The spectrum is a
+   scale, never decoration; data sits on Night. Tokens below are the brand's fixed values; the
+   semantic shadcn variables map onto them per theme. */
+:root {
+  --spectral-deep: #0a1f9e;
+  --spectral-sky: #2f6bea;
+  --spectral-cyan: #56c8ee;
+  --spectral-haze: #e9f3c6;
+  --spectral-apricot: #f5b36b;
+  --spectral-flame: #ee5a24;
+  --spectral-ember: #b8250f;
+  --spectral-night: #0a1030;
+  --spectral-line: #9fb4d9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+  --color-spectral-deep: var(--spectral-deep);
+  --color-spectral-sky: var(--spectral-sky);
+  --color-spectral-cyan: var(--spectral-cyan);
+  --color-spectral-haze: var(--spectral-haze);
+  --color-spectral-apricot: var(--spectral-apricot);
+  --color-spectral-flame: var(--spectral-flame);
+  --color-spectral-ember: var(--spectral-ember);
+  --color-spectral-night: var(--spectral-night);
+  --color-spectral-line: var(--spectral-line);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Light: paper with a cool tint; Deep leads, Flame once per view. */
+:root {
+  --background: #f6f8fd;
+  --foreground: var(--spectral-night);
+  --card: #ffffff;
+  --card-foreground: var(--spectral-night);
+  --popover: #ffffff;
+  --popover-foreground: var(--spectral-night);
+  --primary: var(--spectral-deep);
+  --primary-foreground: #ffffff;
+  --secondary: #e6ecf8;
+  --secondary-foreground: var(--spectral-night);
+  --muted: #e6ecf8;
+  --muted-foreground: #4b5a84;
+  --accent: #dff4fb;
+  --accent-foreground: var(--spectral-night);
+  --destructive: var(--spectral-ember);
+  --border: #cfd9ee;
+  --input: #cfd9ee;
+  --ring: var(--spectral-sky);
+  --chart-1: var(--spectral-deep);
+  --chart-2: var(--spectral-sky);
+  --chart-3: var(--spectral-cyan);
+  --chart-4: var(--spectral-apricot);
+  --chart-5: var(--spectral-flame);
+  --radius: 0.375rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--spectral-night);
+  --sidebar-primary: var(--spectral-deep);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6ecf8;
+  --sidebar-accent-foreground: var(--spectral-night);
+  --sidebar-border: #cfd9ee;
+  --sidebar-ring: var(--spectral-sky);
+}
+
+/* Dark: Night ground, Line for labels, Cyan as the reported value. */
+.dark {
+  --background: var(--spectral-night);
+  --foreground: #eef2fb;
+  --card: #121a3f;
+  --card-foreground: #eef2fb;
+  --popover: #121a3f;
+  --popover-foreground: #eef2fb;
+  --primary: var(--spectral-cyan);
+  --primary-foreground: var(--spectral-night);
+  --secondary: #1a2450;
+  --secondary-foreground: #eef2fb;
+  --muted: #1a2450;
+  --muted-foreground: var(--spectral-line);
+  --accent: #1a2450;
+  --accent-foreground: #eef2fb;
+  --destructive: var(--spectral-flame);
+  --border: color-mix(in oklab, var(--spectral-line) 22%, transparent);
+  --input: color-mix(in oklab, var(--spectral-line) 28%, transparent);
+  --ring: var(--spectral-cyan);
+  --chart-1: var(--spectral-sky);
+  --chart-2: var(--spectral-cyan);
+  --chart-3: var(--spectral-haze);
+  --chart-4: var(--spectral-apricot);
+  --chart-5: var(--spectral-flame);
+  --sidebar: #121a3f;
+  --sidebar-foreground: #eef2fb;
+  --sidebar-primary: var(--spectral-cyan);
+  --sidebar-primary-foreground: var(--spectral-night);
+  --sidebar-accent: #1a2450;
+  --sidebar-accent-foreground: #eef2fb;
+  --sidebar-border: color-mix(in oklab, var(--spectral-line) 22%, transparent);
+  --sidebar-ring: var(--spectral-cyan);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-variation-settings: "MONO" 0, "CASL" 0;
+  }
+  html {
+    @apply font-sans;
+  }
+  h1, h2, h3 {
+    letter-spacing: -0.015em;
+  }
+}
+
+@utility label-mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The spectral field: luminance mapped onto the thermal scale, cool at the top left. */
+@utility bg-spectral-field {
+  background: linear-gradient(
+    135deg,
+    var(--spectral-night) 0%,
+    var(--spectral-deep) 22%,
+    var(--spectral-sky) 42%,
+    var(--spectral-cyan) 56%,
+    var(--spectral-haze) 68%,
+    var(--spectral-apricot) 80%,
+    var(--spectral-flame) 91%,
+    var(--spectral-ember) 100%
+  );
+}

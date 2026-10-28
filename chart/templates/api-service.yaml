@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ta.name" . }}-api
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "ta.selector" (dict "ctx" . "component" "api") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

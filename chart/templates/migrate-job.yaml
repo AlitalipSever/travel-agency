@@ -1,0 +1,37 @@
+# Runs before every install and upgrade (Helm hook). If it fails the release is not applied
+# and the previous pods keep serving (06-operations §2, Q4).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ta.name" . }}-migrate
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        {{- include "ta.selector" (dict "ctx" . "component" "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ include "ta.apiImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["sh", "-c"]
+          args:
+            - >-
+              python manage.py migrate --noinput
+              {{- if .Values.migrate.seed }}
+              && python manage.py seed_locations
+              && python manage.py seed_destination_types
+              {{- end }}
+          {{- include "ta.envFrom" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.migrate.resources | nindent 12 }}

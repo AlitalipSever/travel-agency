@@ -1,0 +1,123 @@
+# CI (docs/06-operations.md §2). Pull requests and pushes to develop: lint and tests for the
+# API and the site. Pushes to main additionally build the two images for linux/arm64 and
+# linux/amd64 and push them to ghcr.io tagged with the commit SHA (and `latest`).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: api (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: travel
+          POSTGRES_PASSWORD: travel
+          POSTGRES_DB: travel
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U travel" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://travel:travel@localhost:5432/travel
+      REDIS_URL: redis://localhost:6379/0
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: api/uv.lock
+      - run: uv python install 3.13
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - run: uv run pytest -q -p no:cacheprovider
+
+  web:
+    name: web (eslint, tsc)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm exec next typegen
+      - run: pnpm exec tsc --noEmit
+
+  images:
+    name: images to ghcr (main only)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: owner in lower case
+        run: echo "OWNER_LC=${OWNER,,}" >> "$GITHUB_ENV"
+      - name: api image
+        uses: docker/build-push-action@v6
+        with:
+          context: api
+          platforms: linux/arm64,linux/amd64
+          push: true
+          build-args: GIT_COMMIT=${{ github.sha }}
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/travel-agency-api:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/travel-agency-api:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: web/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/travel-agency-web:${{ github.sha }}
+            ghcr.io/${{ env.OWNER_LC }}/travel-agency-web:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max

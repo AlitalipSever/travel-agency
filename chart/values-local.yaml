@@ -1,0 +1,21 @@
+# kind on the laptop (L2): no TLS, one replica each, small resources, default storage class.
+host: localhost
+ingress:
+  tls: false
+api:
+  replicas: 1
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+config:
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,travel-agency-api
+  NEXT_PUBLIC_API_URL: http://localhost
+  API_PUBLIC_URL: http://localhost
+postgres:
+  storage:
+    hostPath: ""
+    storageClassName: standard
+    size: 2Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}

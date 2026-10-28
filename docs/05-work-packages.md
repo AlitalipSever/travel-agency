@@ -33,7 +33,7 @@ M about a day, L more. Done when = the acceptance checks of 01-requirements that
 | Id | Package | Kind | Size | Depends on | Done when |
 |---|---|---|---|---|---|
 | B1 | Django project skeleton: settings by environment, custom user with `role` and `partner_id`, DRF with token auth, drf-spectacular, RFC 7807 handler with the problem types of 04 §1, `/healthz` and `/readyz`, pagination and stable ordering defaults, settings table (`bracket_edges`, `agency_timezone`, `sample_retention_days`), Dockerfile (multi-stage, non-root, arm64 + amd64) | brief | M | | `/api/docs` serves the schema; N6.1 (401/403); A16 setting readable |
-| B2 | Weather adapter and samples: upstream client with timeouts, bounded retries with jitter, circuit breaker, budget split (refresh share, ad hoc share, 80 % cap, minute and month counters); ad hoc cache in Redis with stale fallback and 503 path; `WeatherSample` upsert (newest wins, observation beats forecast); `RefreshRun`; refresh tasks (scheduled with spread and adaptive interval, on create, manual); retention | brief | L | B1 | W1.1 to W1.5, W4.1 to W4.7; R1 and R2 as tests with a mocked upstream; one live smoke test |
+| B2 | Weather adapter and samples: upstream client with timeouts, bounded retries with jitter, circuit breaker, budget split (refresh share, ad hoc share, 80 % cap, minute and month counters); ad hoc cache in Redis with stale fallback and 503 path; `WeatherSample` upsert (newest wins, observation beats forecast); `RefreshRun`; refresh tasks (scheduled with spread and adaptive interval, on create, manual); retention; `/weather/current` | brief | L | B1 | W1.1 to W1.5, W4.1 to W4.7; R1 and R2 as tests with a mocked upstream; one live smoke test (skipped without a key). The "visible in the operations status" clauses of W4.2 and W4.5 close with B12 |
 | B3 | Daily summary and forecast endpoint: `summarize_day` (mean, min, max to one decimal; daytime slots; significant weather order; cloudy on tie; `unknown`), local day by slot start with IANA zones, `today` plus `days` with `partial` and sample counts | brief | M | B2 | W2.1 to W2.6, W3.1 to W3.5; table test with the edge cases (no daytime slot, DST day, tie, unmapped code) |
 | B4 | Locations: model (IANA zone derived offline when omitted, `active`, soft delete), idempotent seed of the thirteen capitals with cited coordinates, CRUD with delete guard (409 listing destinations), admin, refresh on create | brief | M | B2 | L1.1 to L1.6, L2.1 to L2.4 |
 | B5 | Brackets: half-open open-ended edges from the settings table, `no_data` group, `observed_at` and `stale` per location, counts, fixed and quantile modes with the shrink rule, bracket-edges endpoint with attribution | brief | M | B3, B4 | L3.1 to L3.6, L4.1 to L4.5 |
@@ -62,13 +62,13 @@ M about a day, L more. Done when = the acceptance checks of 01-requirements that
 | Id | Package | Kind | Size | Depends on | Done when |
 |---|---|---|---|---|---|
 | P1 | Terraform (hcloud): CAX21 ARM server, firewall (22 from operator IPs, 80, 443), data volume, cloud-init installing k3s with Traefik disabled; kubeconfig retrieval | prod | M | | `kubectl get nodes` from the laptop; state in a private backend |
-| P2 | Ingress and certificates: ingress-nginx, cert-manager with a Let's Encrypt staging issuer first, then production; DNS A record (or an sslip.io name before the domain exists) | prod | S | P1 | A hello page over HTTPS with a valid certificate; risk 5 of 02 §11 retired |
+| P2 | Ingress and certificates: ingress-nginx, cert-manager with a Let's Encrypt staging issuer first, then production; DNS A record `travel-agency.<domain>` in Cloudflare (DNS only, no proxy), set by hand once P1 prints the address | prod | S | P1 | A hello page over HTTPS with a valid certificate; risk 5 of 02 §11 retired |
 | P3 | PostgreSQL: CloudNativePG operator, one instance cluster on the volume, nightly base backup and WAL to Hetzner Object Storage, 14 day retention; fallback to a plain chart if not clean within the first working day (ADR 0007) | prod | M | P1 | `psql` connects; a backup object exists; restore drill recorded with duration (N5.3) |
 | P4 | Redis deployment, image pull secret for ghcr, application secrets via `make secrets` | prod | S | P1 | `redis-cli ping` from a pod; pods pull private images |
 | P5 | Helm chart: api (2 replicas), worker, beat, web, migrate pre-upgrade job, Redis, CNPG `Cluster`, ingress, probes, requests and limits of 02 §7.2, `values-local.yaml`, `values-hetzner.yaml`, `values-azure.yaml` (documented profile) | prod | L | B1, W1 | `helm install` on kind (L2) and on k3s; `helm rollback` works |
 | P6 | CI/CD: ruff, mypy, pytest with PostgreSQL and Redis services, squawk on migrations, dependency scan, buildx arm64 + amd64, push to ghcr with SHA tags, `helm upgrade` with a deploy kubeconfig, smoke test on `/readyz` and one bookable query, prune old images | prod | M | P5 | A commit on main is live in minutes; Q4 holds on the server |
 | P7 | Observability stack: Prometheus and Grafana (kube-prometheus-stack) with RED dashboards and the budget and breaker gauges; optional, last | prod | M | P5, B13 | Operations page can link a dashboard; node memory under budget (02 §7.2) |
-| P8 | Quick public URL before the domain (optional): sslip.io name on the Hetzner IP with cert-manager, or a single-image deploy of `api` plus `web` on a hosted service to prove the images run behind a public HTTPS URL | prod | S | P2 or P5 | A public HTTPS URL answers `/readyz`; dropped once the domain is live |
+| P8 | Quick public URL before the domain (dropped 2026-10-28: the domain is in hand, P2 serves the final name directly): sslip.io name on the Hetzner IP with cert-manager, or a single-image deploy of `api` plus `web` on a hosted service | prod | S | P2 or P5 | Not needed while P2 holds |
 
 ## Critical path and minimum deliverable
 
@@ -78,7 +78,7 @@ the required search: P requirements complete; **the brief is now fulfilled local
 P5 and L2 (the chart on kind: production-shaped locally), B11, B12, B9, B10, B13, W2 to W6.
 
 Track B can start any time after P5 exists and needs only a Hetzner token and, for the final
-URL, a domain: P1, P2, P3, P4 in one sitting, then P6; P7 and P8 only if time allows.
+URL, a domain: P1, P2, P3, P4 in one sitting, then P6; P7 only if time allows; P8 is dropped.
 
 Minimum deliverable: B1 to B8 running through L1 and L2 with W1 to W3 (the brief, locally
 and production-shaped, with a live demo). Everything after that is additive and can be cut in

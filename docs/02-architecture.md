@@ -173,7 +173,7 @@ names, coordinates decimal degrees (WGS 84), errors RFC 7807 problem details.
 | Channel | Protocol | Business partners | Carries |
 |---|---|---|---|
 | Public API `/api/v1` | HTTPS, JSON, `Authorization: Token`, OpenAPI 3 at `/api/schema`, Swagger at `/api/docs` | operations, sales, finance, partners | Every business input and output above |
-| Browser to API | Same API from the case study site's pages, CORS restricted to the site's origin, demo partner token | case study visitor | Demo searches and bookings, operations status |
+| Browser to site to API | The site's pages call its own proxy route; the site's server calls the API with the demo partner token (ADR 0015) | case study visitor | Demo searches and bookings, operations status |
 | Django admin | HTTPS, session cookie | operations | Catalogue edits (same data as the API) |
 | Upstream weather | HTTPS, API key in query, JSON | OpenWeatherMap | Coordinates out; observations and forecast slots in |
 | Task queue | Redis protocol, Celery | internal | Refresh jobs (scheduled, on create, manual) |
@@ -224,7 +224,7 @@ flowchart TB
     redis[("Redis<br/>ad hoc weather cache, Celery queue")]
   end
   owm["OpenWeatherMap"]
-  web -- "HTTPS /api/v1, demo token" --> api
+  web -- "HTTP /api/v1, demo token (server side)" --> api
   api -- "SQL: catalogue, samples, history" --> pg
   api -- "ad hoc cache, enqueue refresh on create or on request" --> redis
   api -- "HTTPS, ad hoc coordinates only" --> owm
@@ -270,8 +270,8 @@ flowchart BT
 
 | App | Responsibility | Key modules | Fulfils | Depends on |
 |---|---|---|---|---|
-| core | Auth (token, four roles, partner scope, demo partner), RFC 7807 handler, history registration, health endpoints, settings (bracket edges, agency time zone), shared pagination and test helpers | `auth.py`, `errors.py`, `history.py`, `health.py`, `settings_store.py` | N6, A16, ADR 0014 | Django, DRF, pghistory |
-| weather | Upstream client with timeouts, retries, circuit breaker and budget split; ad hoc cache; `WeatherSample` upsert; `summarize_day` (mean, min, max, daytime significant weather, local day by slot start); refresh tasks (scheduled, on create, manual); retention | `client.py`, `budget.py`, `cache.py`, `models.py`, `summary.py`, `tasks.py`, `views.py` | W1 to W4, A11 to A14, ADR 0005, 0012, 0013 | core |
+| core | Auth (token, four roles, partner scope, demo partner), RFC 7807 handler, history registration, health endpoints, settings (bracket edges, agency time zone), the shared Redis connection, shared pagination and test helpers | `auth.py`, `errors.py`, `history.py`, `views.py` (health), `settings_store.py`, `redis_client.py` | N6, A16, ADR 0014 | Django, DRF, pghistory |
+| weather | Upstream client with timeouts, retries, circuit breaker and budget split; ad hoc cache; `WeatherSample` upsert; `summarize_day` (mean, min, max, daytime significant weather, local day by slot start); refresh tasks (scheduled, on create, manual); retention | `upstream/` (types, client, fixtures mock, budget, breaker, gateway), `domain/summary.py`, `samples.py`, `tasks.py`, `api/` (serializers, views, urls), `models.py` | W1 to W4, A11 to A14, ADR 0005, 0012, 0013 | core |
 | locations | `Location` (IANA zone, derived when omitted; active; soft delete; delete guard), idempotent seed of the thirteen capitals, brackets endpoint (half-open edges, no-data group, stale mark, quantile mode), bracket edges endpoint | `models.py`, `seed.py`, `brackets.py`, `views.py` | L1 to L4, A4, A5, ADR 0004 | weather, core |
 | catalog | `DestinationType` reference list, `Destination` (danger 0 to 3, active, delete guard), `Package` (price per traveller, duration, ordered destinations), derived danger annotation with label | `models.py`, `danger.py`, `views.py` | P1, P2, P4, A6, A7, A10, A15, ADR 0003, 0011 | locations, core |
 | booking | `Departure` (status, capacity floor), `Traveller` (risk appetite), `Partner`, `Booking` (seats, snapshots, idempotency key, cancelled_by); bookable search (validation, one query, stable order, extras); booking service (`select_for_update`); departure cancel; demo reset task | `models.py`, `search.py`, `service.py`, `views.py`, `tasks.py` | P3, P5, P6, N4, A1 to A3, A16, A17, ADR 0002 | catalog, weather, core |
@@ -558,7 +558,7 @@ where the rule is decided.
 | Filters | Extras only narrow a required result; absent parameters leave the required behaviour unchanged | P5.6; N4.5 |
 | Honest degradation | `source` (live, cached, stale), `partial`, sample counts, `observed_at`, `as_of`, `stale` marks; the consumer sees data quality, nothing is hidden | W1, W2, L3; ISO 25012 |
 | Admin | Django admin for `ops` only, same models and constraints as the API | ADR 0001 |
-| Case study site | Reads `docs/` and the API; CORS limited to its origin; acts as the `demo` partner | A17; 04-api |
+| Case study site | Reads `docs/` and the API; the demo token stays in its server, forwarded through an allow-listed proxy route; acts as the `demo` partner | A17; 04-api; ADR 0015 |
 
 ### 8.3 Security
 
@@ -674,7 +674,7 @@ Short form: context, stimulus, response, metric. U = usage scenario, C = change 
 | 2 | CloudNativePG learning curve inside a short time box | Days lost on the operator | Fallback rule in ADR 0007: plain chart if not clean by the first working day |
 | 3 | Free tier weather data | No history, 3 hour resolution, 120 hour window, first-day partial today | Persisted samples (ADR 0012); `partial` stated; paid tier if the client needs more |
 | 4 | Upstream API or condition codes change | Wrong labels or failed parsing | Closed label set with `unknown` fallback (W3.4); sample payloads in tests; adapter isolated (Q7) |
-| 5 | Certificate issuance fails (ACME, DNS not yet propagated, Let's Encrypt rate limits) | Site unreachable over HTTPS on launch day | Staging issuer first, then production; DNS set a day ahead; runbook entry |
+| 5 | Certificate issuance fails (ACME, DNS not yet propagated, Let's Encrypt rate limits) | Site unreachable over HTTPS on launch day | Staging issuer first, then production; DNS set a day ahead; runbook entry. The `.dev` zone is HSTS-preloaded, so there is no HTTP-only fallback: the staging certificate is checked with `curl -k` before the production issuer is switched on |
 | 6 | Demo partner token is public by design | Demo data abuse, upstream budget pressure | Partner scope, per-token rate limit, nightly reset, ad hoc share cap (A17, W4.3) |
 | 7 | History tables grow without bound | Disk use over years | Acceptable now; retention policy in the roadmap (GDPR row) |
 | 8 | tz data goes stale in images | Local days mis-assigned after a DST rule change | tzdata updated on every image build (06-operations); F4 |

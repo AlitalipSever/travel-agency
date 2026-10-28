@@ -102,7 +102,7 @@ quality scenarios in 02 §10.2.
      clear, unknown; an unmapped code yields unknown, never an error.
   5. A table test fixes the rules and the edge cases: no daytime slot, a daylight saving day
      with 7 or 9 slots, ties, an unmapped code.
-- **Satisfied by.** ADR 0013; A12; `weather/summary.py` and its table test.
+- **Satisfied by.** ADR 0013; A12; `weather/domain/summary.py` and its table test.
 
 #### W4 Independence from the upstream
 

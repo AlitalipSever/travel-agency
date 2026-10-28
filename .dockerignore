@@ -1,0 +1,12 @@
+
+# web build context is the repository root
+web/node_modules
+web/.next
+api/.venv
+# never into any image, whatever the build context
+api/.env
+api/.env.*
+infra/terraform/.env
+infra/terraform/*.tfstate*
+infra/terraform/*.tfvars
+infra/terraform/.terraform

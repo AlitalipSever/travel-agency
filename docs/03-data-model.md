@@ -149,7 +149,8 @@ Two more tables without relations worth drawing:
   (L4.2).
 
 Users are Django's auth user with two added columns (`role`, `partner_id`) as the custom user
-model; tokens are DRF tokens, one per user. The `demo` partner is a `Partner` row with
+model; tokens are DRF tokens, one per user. `Partner` and `User` live in the `core` app (the
+user points at the partner; booking references both, never the reverse, 02 §5.2). The `demo` partner is a `Partner` row with
 `is_demo = true` and one user of role `partner`.
 
 ## Derived values (never stored)
@@ -188,6 +189,7 @@ model; tokens are DRF tokens, one per user. The `demo` partner is a `Partner` ro
 |---|---|
 | Departure (starts_on) where status = planned | P5 date range filter |
 | Departure (package_id, starts_on) unique | P3 uniqueness, package detail |
+| Departure (package_id, starts_on) where status = planned | bookable search probe per package (P5.7; measured in `docs/plans/bookable.md`) |
 | Booking (departure_id) where status = confirmed | remaining seats aggregate (P3, P5, P6) |
 | Booking (created_by, idempotency_key) unique | P6.3 idempotent retry |
 | Booking (partner_id, created_at) | partner's own bookings, finance lists |
