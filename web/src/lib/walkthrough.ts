@@ -14,7 +14,7 @@ export async function walkthroughSteps(): Promise<Step[]> {
   }
   return items.map((raw, i) => {
     const m = /^(\d+)\.\s+(?:\*\*(.+?)\*\*\s*)?(.*)$/.exec(raw);
-    let text = (m?.[3] ?? raw).trim();
+    let text = (m?.[3] ?? raw).replace(/`/g, "").trim();
     const budget = /(\d+(?:\.\d+)?\s*(?:s|min))\.?$/.exec(text);
     if (budget) text = text.slice(0, budget.index).trim();
     return { n: i + 1, title: (m?.[2] ?? text).replace(/\.$/, ""), text: m?.[2] ? text : "", budget: budget?.[1] ?? null };
