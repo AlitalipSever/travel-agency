@@ -8,8 +8,8 @@ will provide; "recorded" means a dated line in the tables of this file.
 | Name | Where | Enter | Values | URL |
 |---|---|---|---|---|
 | compose | laptop, Docker | `make up`, `make test`, `make seed`, `make demo` | `.env` from `.env.example` | http://localhost:8000 (api), http://localhost:3000 (web) |
-| kind | laptop, Kubernetes in Docker | `make kind-up`, `make kind-deploy`, `make kind-down` | `chart/values-local.yaml` | http://localhost (ingress), no TLS |
-| hetzner | one CAX21, k3s (`infra/terraform`) | `export KUBECONFIG=~/.kube/travel-agency.yaml`; `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | `https://travel-agency.<domain>` (Cloudflare DNS, A record, DNS only) |
+| kind (planned, L2) | laptop, Kubernetes in Docker | `helm upgrade --install … -f chart/values-local.yaml` | `chart/values-local.yaml` | http://localhost (ingress), no TLS |
+| hetzner (live since 2026-10-28) | one CAX21, k3s (`infra/terraform`) | `export KUBECONFIG=~/.kube/travel-agency.yaml`; `make images-push`, `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | https://travel-agency.asever.dev (Cloudflare DNS, A record, DNS only) |
 | azure | AKS, documented profile only | | `chart/values-azure.yaml` | |
 
 ## 2. Deploy
@@ -30,7 +30,10 @@ Trigger: push to `main` (pull requests run tests only).
 6. What is live: `helm history travel-agency` (revision, SHA, time) and `/api/v1/ops/status`
    (`versions.commit`).
 
-Manual deploy from a laptop: `make deploy TAG=<sha>` (same steps 3 to 5).
+Manual deploy from a laptop: `make images-push TAG=<sha>` then `make deploy TAG=<sha>` (steps 2
+to 4). This is how the first ten revisions went out on 2026-10-28: the arm64 build is native on
+an Apple Silicon laptop (about five minutes), while the QEMU build in CI runs only on `main`.
+Step 5 (CI smoke test and automatic rollback) and the `helm upgrade` from CI are P6b, still open.
 
 Before the first release the cluster is prepared once (P1, P2): `make infra-apply` creates the
 server (Terraform, `infra/terraform`), the A record is set by hand in Cloudflare, and

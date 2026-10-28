@@ -1,6 +1,6 @@
 # 0007 PostgreSQL through the CloudNativePG operator
 
-Status: accepted (2026-10-27)
+Status: accepted (2026-10-27); fallback taken 2026-10-28 (see Consequences)
 Date: 2026-10-26
 Addresses: N5
 
@@ -26,6 +26,11 @@ step to two instances is configuration. The learning cost is accepted; if the op
 running cleanly within the first working day, fall back to option 1 and record it.
 
 ## Consequences
+
+2026-10-28: the fallback clause applied. The first release ran a plain PostgreSQL StatefulSet
+on the Hetzner data volume (`postgres.mode: builtin` in the chart) because the operator did not
+fit the day; the chart keeps `postgres.mode: cnpg` as the next step and the application does not
+notice the difference (`DATABASE_URL` only). Until then there is no automated backup.
 
 Backups to Hetzner Object Storage, 14 day retention; a restore drill before go-live. Database
 credentials are owned by the operator's secret. Application connects through the operator's

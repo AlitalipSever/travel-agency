@@ -30,6 +30,9 @@ acceptance checks pass in CI.
 | B9 Booking | 2026-10-28 (PR #12) | P6.1 to P6.6, N6.2 with two partner tokens; P6.2 concurrency test, 20 rounds of two threads on the last seat | P6.7 attribution lands with B11; `/partners` endpoint deferred (admin creates partners) |
 | P1 Server and k3s | 2026-10-28 (PR #25) | `kubectl get nodes` from the laptop; firewall 22 and 6443 from the operator only; data volume at `/mnt/data` | Terraform, one CAX21, pinned k3s, Traefik disabled; state and token local |
 | P2 Ingress and certificates | 2026-10-28 | Hello page at `https://travel-agency.asever.dev` with a Let's Encrypt certificate; staging issuer rehearsed first; risk 5 of 02 §11 retired | ingress-nginx and cert-manager by Helm (`make bootstrap`); the chart takes the host in P5 |
+| P6a CI | 2026-10-28 (PR #27) | ruff, format, mypy, pytest with PostgreSQL and Redis services, eslint and tsc on every pull request; multi-arch images to ghcr on `main` | Squawk, dependency scan and the deploy step (P6b) still open |
+| P5 Helm chart | 2026-10-28 | `helm upgrade --install` on the Hetzner node: migrate hook job, api (2 replicas, probes on `/readyz` and `/healthz`), worker, beat (Recreate), web, Redis, built-in PostgreSQL on the data volume, Ingress with the P2 certificate; ten revisions on day one, `helm rollback` available | Q4 rehearsed: the probes' `Host` header and the SSL redirect belong to the ingress (06 §8); images pushed from the laptop (`make images-push`) |
+| B12 (rest) Demo in the cluster | 2026-10-28 | `make k8s-demo` seeds partner, users, packages and bookings; `make demo-token` stores the demo partner token; the site's demo flow runs against the live API | Nightly demo reset task still open |
 
 ## 2. Deliberately left out
 
@@ -38,6 +41,8 @@ decisions (adr/) are the reasons.
 
 | Item | Why | What it would take |
 |---|---|---|
+| CloudNativePG (P3) | The chart ships one PostgreSQL StatefulSet on the Hetzner volume (ADR 0007 fallback, taken on day one for time); no operator, no automated backup yet | `postgres.mode: cnpg` in the chart rendering a `Cluster`, the operator chart, Object Storage credentials, the restore drill of 06 §5 |
+| CI deploy (P6b) and kind (L2) | Releases went out from the laptop with the same `helm upgrade` CI would run; kind was not needed to reach the server | A deploy kubeconfig as a GitHub secret, the smoke test and rollback step of 06 §2; `values-local.yaml` on a kind cluster |
 | Event streaming (Kafka or an outbox) | No requirement needs fan-out yet; the refresh job and bookings are tasks and transactions; the events are named (00-domain §6) and the booking service is written behind an interface (ADR 0008) | Outbox table, a producer in the booking service, a consumer for notifications; Redpanda or Event Hubs in the chart |
 | High availability | One server is enough for the brief; HA is a platform step, not an application change (02 §11 risk 1) | Second node, PostgreSQL with two instances (one setting in CloudNativePG), api replicas spread by anti-affinity, beat on a lease |
 | Payments and refunds | Out of the brief; large surface and compliance | A payment provider adapter, a payment state on bookings, refund rules tied to cancellation fees |
