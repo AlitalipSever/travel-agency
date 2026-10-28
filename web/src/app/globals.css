@@ -181,3 +181,40 @@
     var(--spectral-ember) 100%
   );
 }
+
+/* Leaflet map on the agency pages: temperature badges and the picked point. */
+.ta-pin {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  font: 600 13px/1 var(--font-sans);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+.ta-pin:hover {
+  transform: scale(1.12);
+}
+.ta-cross {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 3px solid var(--spectral-deep);
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: 0 0 0 4px rgb(10 31 158 / 0.2);
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.15);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  line-height: 1.4;
+}

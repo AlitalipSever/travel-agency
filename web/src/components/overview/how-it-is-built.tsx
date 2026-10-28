@@ -1,9 +1,9 @@
 const ROWS = [
   ["api", "Django 5.2, Django REST Framework, drf-spectacular, gunicorn", "HTTP API, admin, OpenAPI contract, RFC 7807 errors"],
-  ["worker, beat", "Celery on Redis", "Scheduled weather refresh with spread and an adaptive interval, retention, on-create refresh"],
-  ["postgres", "PostgreSQL 16", "System of record: locations, samples, catalogue, departures, bookings"],
-  ["redis", "Redis 7", "Celery broker, ad hoc weather cache, call budget and breaker state"],
-  ["web", "Next.js, shadcn/ui", "This site: documents from the repository, live demo through a server-side proxy, operations status"],
+  ["worker, beat", "Celery on Redis", "Weather refresh on a schedule, spread over the interval; cleanup of old data; refresh when a city is added"],
+  ["postgres", "PostgreSQL 16", "The one source of truth: cities, weather samples, tours, departures, bookings"],
+  ["redis", "Redis 7", "Task queue, cache for weather at free points, call budget and breaker state"],
+  ["web", "Next.js, shadcn/ui", "This site: the agency pages, the documents, the live demo through a server-side proxy, the operations status"],
 ];
 
 export function HowItIsBuilt() {
@@ -13,7 +13,7 @@ export function HowItIsBuilt() {
         <p className="label-mono text-muted-foreground">Containers</p>
         <h2 className="mt-2 text-2xl font-medium tracking-tight">Five processes, one compose file, one Helm chart</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          The same images run on a laptop with docker compose and on a Kubernetes node through one chart; environments differ only in values files. Architecture in arc42 form with C4 views: see the architecture document; decisions have their own section.
+          The same images run on a laptop with docker compose and on a Kubernetes node through one Helm chart; only the values files differ. The architecture document follows arc42 with C4 views; decisions have their own page.
         </p>
         <div className="mt-6 overflow-hidden rounded-lg border">
           <table className="w-full text-sm">

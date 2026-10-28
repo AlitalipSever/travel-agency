@@ -33,6 +33,7 @@ acceptance checks pass in CI.
 | P6a CI | 2026-10-28 (PR #27) | ruff, format, mypy, pytest with PostgreSQL and Redis services, eslint and tsc on every pull request; multi-arch images to ghcr on `main` | Squawk, dependency scan and the deploy step (P6b) still open |
 | P5 Helm chart | 2026-10-28 | `helm upgrade --install` on the Hetzner node: migrate hook job, api (2 replicas, probes on `/readyz` and `/healthz`), worker, beat (Recreate), web, Redis, built-in PostgreSQL on the data volume, Ingress with the P2 certificate; ten revisions on day one, `helm rollback` available | Q4 rehearsed: the probes' `Host` header and the SSL redirect belong to the ingress (06 §8); images pushed from the laptop (`make images-push`) |
 | B12 (rest) Demo in the cluster | 2026-10-28 | `make k8s-demo` seeds partner, users, packages and bookings; `make demo-token` stores the demo partner token; the site's demo flow runs against the live API | Nightly demo reset task still open |
+| W7 Agency site | 2026-10-28 | The site reads as a travel agency (Andes & Coast): home with the bookable search, destinations with live temperatures and forecasts, tours with adventure levels, dated departures and the booking dialog; everything about the engineering sits behind one "Case study" menu; plain English throughout | Photos are AI-made (Gemini) and say so in the footer; the demo page keeps the engineer's view of the same calls |
 
 ## 2. Deliberately left out
 

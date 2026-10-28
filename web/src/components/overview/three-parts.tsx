@@ -4,19 +4,19 @@ const PARTS = [
   {
     icon: CloudSun,
     title: "Weather in, on a schedule",
-    text: "A worker refreshes current weather and the five day forecast for every known location into PostgreSQL. The request path never calls the upstream for a known location; unknown coordinates go through a cache, a call budget and a circuit breaker, and stale data is labelled before a 503.",
+    text: "A background job saves the current weather and the five day forecast for every known city into PostgreSQL. A request for a known city never calls the weather service. Other points go through a cache, a call budget and a circuit breaker; old data is marked as old before we answer 503.",
     tags: ["W1 to W4", "ADR 0005", "ADR 0012", "ADR 0013"],
   },
   {
     icon: MapPinned,
     title: "Locations by temperature bracket",
-    text: "Thirteen South American capitals seeded with their time zones, grouped into half-open brackets from a settings table. A quantile mode derives the edges from today's readings so no bracket is empty; locations without a reading are listed, not hidden.",
+    text: "Thirteen South American capitals with their time zones, grouped by temperature. The group edges come from a settings table; quantile mode takes them from today's readings so no group is empty. Cities without a reading are listed, not hidden.",
     tags: ["L1 to L4", "ADR 0004"],
   },
   {
     icon: Route,
     title: "Packages, departures, the bookable search",
-    text: "A package's danger is the maximum over its destinations, computed in the query, never stored. Capacity belongs to a departure date; remaining seats are derived from confirmed bookings under a row lock. The search returns packages with a planned departure in the range and seats left.",
+    text: "A tour's danger score is the highest score of its stops, computed in the query, never stored. Seats belong to a departure date; free seats are counted from confirmed bookings under a row lock. The search returns tours with a planned date in the range and seats left.",
     tags: ["P1 to P6", "ADR 0002", "ADR 0003", "ADR 0011"],
   },
 ];

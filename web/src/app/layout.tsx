@@ -22,9 +22,9 @@ const plexMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Travel agency backend", template: "%s | Travel agency backend" },
+  title: { default: "Andes & Coast, small group trips in South America", template: "%s | Andes & Coast" },
   description:
-    "Weather, locations by temperature bracket, tour packages with a derived danger score, departures with capacity and the bookable search: a backend case study with its documentation and a live demo.",
+    "A demo travel agency: thirteen South American capitals with live weather, small group tours with clear adventure levels and dated departures. Built as a backend case study.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
