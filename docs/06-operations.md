@@ -128,6 +128,7 @@ Targets (Q5): RPO one night, RTO 30 minutes.
 | Ad hoc rate limit | env `ADHOC_RATE_PER_MIN` | 30 per token | 429 past it |
 | api replicas, resources | `values-*.yaml` | 2; see 02 §7.2 | Capacity |
 | Breaker thresholds | env `BREAKER_FAILURES`, `BREAKER_COOLDOWN_S` | 5, 60 | When the adapter stops calling upstream |
+| `DJANGO_SECURE_SSL_REDIRECT` | chart ConfigMap | `false` in the cluster (`true` is the image default) | HTTPS is enforced by ingress-nginx; in-cluster probes and the web pod use plain http. Django still treats proxied requests as secure through `X-Forwarded-Proto`, which nginx sets itself (`use-forwarded-headers: false`) |
 
 ## 9. Health and observability
 

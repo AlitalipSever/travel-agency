@@ -8,7 +8,7 @@ api:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: 500m, memory: 512Mi}
 config:
-  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,travel-agency-api
   NEXT_PUBLIC_API_URL: http://localhost
 postgres:
   storage:

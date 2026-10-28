@@ -21,6 +21,9 @@ ingress:
 # Non-secret settings (06-operations §8), rendered into a ConfigMap and read with envFrom.
 config:
   DJANGO_DEBUG: "false"
+  # TLS ends at ingress-nginx, which already redirects http to https; inside the cluster the
+  # probes and the web pod talk plain http. Django still learns "secure" from X-Forwarded-Proto.
+  DJANGO_SECURE_SSL_REDIRECT: "false"
   DJANGO_LOG_LEVEL: INFO
   REDIS_URL: redis://travel-agency-redis:6379/0
   REFRESH_INTERVAL_S: "900"
