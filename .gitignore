@@ -15,3 +15,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 celerybeat-schedule*
+
+# Terraform (infra/terraform): state, providers and per-operator values stay local
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan

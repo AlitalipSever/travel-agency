@@ -9,7 +9,7 @@ will provide; "recorded" means a dated line in the tables of this file.
 |---|---|---|---|---|
 | compose | laptop, Docker | `make up`, `make test`, `make seed`, `make demo` | `.env` from `.env.example` | http://localhost:8000 (api), http://localhost:3000 (web) |
 | kind | laptop, Kubernetes in Docker | `make kind-up`, `make kind-deploy`, `make kind-down` | `chart/values-local.yaml` | http://localhost (ingress), no TLS |
-| hetzner | one CAX21, k3s | `export KUBECONFIG=...`; `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | `https://<name>.<domain>`; before the domain exists `https://<ip>.sslip.io` (P8) |
+| hetzner | one CAX21, k3s (`infra/terraform`) | `export KUBECONFIG=~/.kube/travel-agency.yaml`; `make deploy TAG=<sha>` | `chart/values-hetzner.yaml` | `https://travel-agency.<domain>` (Cloudflare DNS, A record, DNS only) |
 | azure | AKS, documented profile only | | `chart/values-azure.yaml` | |
 
 ## 2. Deploy
@@ -60,6 +60,10 @@ API tokens for people and partners: operations creates the user in the admin (ro
 and issues the DRF token there; there is no login endpoint. The demo partner's token is read by
 the site at build time from its environment; rotating it means rotating the Secret and
 rebuilding `web`.
+
+Terraform state (`infra/terraform/terraform.tfstate`), `terraform.tfvars` (operator IP) and the
+Hetzner token (`infra/terraform/.env`, read as `HCLOUD_TOKEN`) stay on the operator's machine and
+are ignored by git; the token is needed only when the infrastructure changes.
 
 Access: kubeconfig and SSH key only on the operator's machine and in GitHub secrets; SSH is
 key based and limited to the operator's IPs by the firewall; nobody has database credentials
