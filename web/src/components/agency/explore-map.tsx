@@ -57,7 +57,7 @@ export function ExploreMap() {
             <SouthAmericaMap points={points} selected={null} onSelect={(id) => router.push(`/destinations/${id}`)} pick={pick} onPick={setPick} className="h-80 w-auto max-w-full lg:h-[420px]" />
           </div>
         )}
-        <p className="px-2 pt-2 pb-1 text-xs text-muted-foreground">Colour shows the temperature now: blue is cool, orange is warm. Grey means no reading yet.</p>
+        <p className="max-w-[340px] px-2 pt-2 pb-1 text-xs text-muted-foreground">Colour shows the temperature now: blue is cool, orange is warm. Grey means no reading yet.</p>
       </div>
       <PointWeather pick={pick} cities={locations} />
     </div>
