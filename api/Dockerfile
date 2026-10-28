@@ -37,6 +37,8 @@ RUN DJANGO_SECRET_KEY=build DATABASE_URL=postgres://x:x@x/x DJANGO_SETTINGS_MODU
 
 # ---------- runtime ----------
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+ARG GIT_COMMIT=
+ENV GIT_COMMIT=${GIT_COMMIT}
 
 # tzdata is updated on every build: daylight saving rules change (F4, 06 §12).
 RUN apt-get update \

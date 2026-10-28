@@ -18,7 +18,7 @@ from core.errors import RateLimited, UpstreamUnavailable
 from core.redis_client import redis_connection
 from locations.models import Location
 
-from . import samples
+from . import samples, stats
 from .domain.conditions import label_for
 from .domain.geo import Point, cache_key, nearest_within, offset_label
 from .upstream import breaker, gateway
@@ -146,12 +146,14 @@ def get_current(lat: float, lon: float) -> Current:
     if raw:
         cached = _from_cache(raw, lat, lon, "cached")
         if cached.age_s <= FRESH_S:
+            stats.record_adhoc("hit")
             return cached
 
     try:
         obs = gateway.fetch_current(lat, lon, "adhoc")
     except gateway.BudgetExhausted as exc:
         if raw:
+            stats.record_adhoc("hit")
             return _from_cache(raw, lat, lon, "stale")
         raise RateLimited(
             "The weather upstream budget for ad hoc requests is spent for this minute.",
@@ -159,6 +161,7 @@ def get_current(lat: float, lon: float) -> Current:
         ) from exc
     except (breaker.BreakerOpen, UpstreamError) as exc:
         if raw:
+            stats.record_adhoc("hit")
             return _from_cache(raw, lat, lon, "stale")
         log.warning("no stored value for %s,%s and upstream unavailable: %s", lat, lon, exc)
         raise UpstreamUnavailable(
@@ -167,6 +170,7 @@ def get_current(lat: float, lon: float) -> Current:
         ) from exc
 
     r.set(key, _serialise(obs), ex=KEEP_S)
+    stats.record_adhoc("miss")
     return Current(
         lat=lat,
         lon=lon,
