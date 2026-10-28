@@ -19,7 +19,7 @@ export default async function DecisionsPage() {
       <PageHeader
         eyebrow="Decisions"
         title="Architecture decision records"
-        lead="One record per significant decision: the context, the options, the choice and its consequences. A record is never edited after acceptance; a new one supersedes it."
+        lead="One record per important decision: the situation, the options, the choice and what follows from it. A record is not edited after it is accepted; a new one replaces it."
       />
       <div className="mx-auto max-w-6xl px-4 pb-20">
         <ol className="divide-y rounded-lg border bg-card">

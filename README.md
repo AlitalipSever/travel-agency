@@ -1,6 +1,6 @@
 # travel-agency
 
-Live: https://travel-agency.asever.dev (site, `/api/docs` for Swagger UI; demo tokens below).
+Live: https://travel-agency.asever.dev (the agency site; the case study pages are behind the "Case study" menu; `/api/docs` for Swagger UI; demo tokens below).
 
 Backend for a travel agency: live weather and five day forecasts for the agency's locations,
 locations grouped by temperature bracket, tour packages with ordered destinations and a derived

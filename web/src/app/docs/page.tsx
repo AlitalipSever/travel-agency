@@ -24,7 +24,7 @@ export default async function DocsIndex() {
   const docs = await listDocs();
   return (
     <>
-      <PageHeader eyebrow="Documentation" title="Documents" lead="Rendered from the repository's docs/ folder at build time. Decisions have their own section." />
+      <PageHeader eyebrow="Documentation" title="Documents" lead="The project documents, rendered from the repository at build time. Decisions have their own page." />
       <div className="mx-auto grid max-w-6xl gap-3 px-4 pb-20 sm:grid-cols-2">
         {docs.map((d) => (
           <Link key={d.slug} href={`/docs/${d.slug}`} className="group rounded-lg border bg-card p-4 transition-colors hover:border-ring">

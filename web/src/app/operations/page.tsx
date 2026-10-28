@@ -11,7 +11,7 @@ export default function OperationsPage() {
       <PageHeader
         eyebrow="Operations"
         title="The weather pipeline, live"
-        lead="Read from /api/v1/ops/status: the last refresh run, upstream calls against the budget shares, the circuit breaker, the ad hoc cache and what is deployed. The shares are drawn on the thermal scale: cool while idle, warm as the limit nears."
+        lead="Live numbers from the API: the last weather refresh, calls against the budget, the circuit breaker, the cache, and which version is running."
       />
       <div className="mx-auto max-w-6xl space-y-8 px-4 pb-20">
         <StatusPanel />

@@ -13,8 +13,8 @@ export default function ApiPage() {
     <>
       <PageHeader
         eyebrow="API"
-        title="The contract"
-        lead="Generated from the code by drf-spectacular and read from the API as you open this page. Every call needs Authorization: Token <value>; errors are RFC 7807 problem details. Swagger UI on the API origin lets you try calls with your own token."
+        title="The API contract"
+        lead="Generated from the code (drf-spectacular) and read live when you open this page. Every call needs a token header; errors follow RFC 7807 problem details."
       />
       <div className="mx-auto max-w-6xl px-4 pb-20">
         <div className="mb-6 flex flex-wrap gap-2">
