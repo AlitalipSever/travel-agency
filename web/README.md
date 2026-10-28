@@ -8,6 +8,11 @@ src/app/api/proxy/    browser to API bridge; adds the demo partner token server 
 src/app/healthz/      liveness for the container and the chart
 src/components/site/  header, navigation, footer, page header
 src/components/spectral/  the visual marks: spectrum bar, isolines
+src/components/docs/  markdown, Mermaid (client), section list, document page
+src/components/demo/  map (d3-geo + world-atlas), brackets, forecast, bookable search, booking dialog
+src/lib/docs.ts       reads docs/ and docs/adr/ at build time (server only)
+src/lib/demo-*.ts     response types and the browser side client for the proxy
+src/lib/spectrum.ts   the thermal scale as a colour function
 src/components/ui/    shadcn/ui components, generated; never edited by hand
 src/lib/api.ts        server-side API client (server only)
 src/lib/sections.ts   the seven sections

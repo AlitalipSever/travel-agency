@@ -13,7 +13,7 @@ export function HowItIsBuilt() {
         <p className="label-mono text-muted-foreground">Containers</p>
         <h2 className="mt-2 text-2xl font-medium tracking-tight">Five processes, one compose file, one Helm chart</h2>
         <p className="mt-3 max-w-2xl text-muted-foreground">
-          The same images run on a laptop with docker compose and on a Kubernetes node through one chart; environments differ only in values files. Architecture in arc42 form with C4 views is under Decisions and Plan.
+          The same images run on a laptop with docker compose and on a Kubernetes node through one chart; environments differ only in values files. Architecture in arc42 form with C4 views: see the architecture document; decisions have their own section.
         </p>
         <div className="mt-6 overflow-hidden rounded-lg border">
           <table className="w-full text-sm">
