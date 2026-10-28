@@ -19,7 +19,7 @@ export default function OverviewPage() {
             Which tours can be sold between two dates, to travellers who accept this much risk?
           </h1>
           <p className="mt-6 max-w-xl text-lg text-white/85">
-            The backend behind Andes &amp; Coast: live weather for the agency's cities, cities grouped by temperature, tours with a danger score, dated departures with seats, and the search that answers the question above in two queries.
+            The backend behind Andes &amp; Coast: live weather for the agency&apos;s cities, cities grouped by temperature, tours with a danger score, dated departures with seats, and the search that answers the question above in two queries.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" nativeButton={false} className="bg-white text-spectral-night hover:bg-white/90" render={<Link href="/demo" />}>

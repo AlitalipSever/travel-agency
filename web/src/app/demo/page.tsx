@@ -20,7 +20,7 @@ export default function DemoPage() {
         <section>
           <h2 className="text-xl font-medium tracking-tight">Locations by temperature bracket</h2>
           <p className="mt-1 mb-5 max-w-2xl text-sm text-muted-foreground">
-            Thirteen capitals, each in one temperature group by its latest reading. The group edges come from settings; quantile mode sets them from today's readings so no group is empty. Old readings and cities without a reading are shown, not hidden. Click a city for its forecast, or any other point on the map for the weather there right now.
+            Thirteen capitals, each in one temperature group by its latest reading. The group edges come from settings; quantile mode sets them from today&apos;s readings so no group is empty. Old readings and cities without a reading are shown, not hidden. Click a city for its forecast, or any other point on the map for the weather there right now.
           </p>
           <BracketsPanel />
         </section>
