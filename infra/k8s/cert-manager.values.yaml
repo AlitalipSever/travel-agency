@@ -1,0 +1,25 @@
+# cert-manager on the k3s node (05-work-packages P2): issues and renews the Let's Encrypt
+# certificate used by the Ingress. Only values that differ from the chart defaults.
+crds:
+  enabled: true
+  keep: true
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    memory: 192Mi
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 192Mi

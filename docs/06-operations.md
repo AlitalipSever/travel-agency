@@ -32,6 +32,15 @@ Trigger: push to `main` (pull requests run tests only).
 
 Manual deploy from a laptop: `make deploy TAG=<sha>` (same steps 3 to 5).
 
+Before the first release the cluster is prepared once (P1, P2): `make infra-apply` creates the
+server (Terraform, `infra/terraform`), the A record is set by hand in Cloudflare, and
+`make bootstrap` installs ingress-nginx, cert-manager and the two Let's Encrypt
+`ClusterIssuer`s (`infra/k8s`). Certificates are requested through the Ingress annotation
+`cert-manager.io/cluster-issuer`: `letsencrypt-staging` first (unlimited, browser-untrusted,
+checked with `curl -k`), then `letsencrypt-prod` (5 certificates per name per week). Done
+2026-10-28 with the temporary hello page (`make hello-up`), which `make hello-down` removes
+once the chart serves the host.
+
 Migration policy (expand-contract): add first (nullable or defaulted columns, new tables),
 keep the code working with both shapes, remove in a later release. A rollback therefore never
 needs a down migration. Index creation uses `CONCURRENTLY`; squawk enforces the rest.
@@ -144,6 +153,7 @@ Targets (Q5): RPO one night, RTO 30 minutes.
 | Partner reports missing bookings | the user's `partner_id` | Bookings belong to another partner by design (scope) |
 | History rows without an actor | pghistory middleware in the API, task context in the worker | Context not set on that path; fix the middleware or the task wrapper |
 | Certificate warning or HTTP only | `kubectl describe certificate`, `describe order`, DNS | Challenge failed: DNS not pointing, port 80 closed, staging issuer still selected, Let's Encrypt rate limit |
+| Certificate issued by "(STAGING) Let's Encrypt" | `kubectl get ingress -o yaml`, the issuer annotation | Switch the annotation to `letsencrypt-prod`, delete the TLS Secret, apply again; cert-manager reissues within a minute |
 | Pods `ImagePullBackOff` | `kubectl describe pod` | ghcr pull secret expired or image tag missing |
 | `CrashLoopBackOff` after a deploy | migrate job logs, `helm history` | Migration or config failed; `helm rollback` |
 | Two refreshes per interval | `kubectl get deploy beat` replicas | A second beat; scale to 1 |
