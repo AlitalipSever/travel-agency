@@ -55,3 +55,28 @@ class ForecastSerializer(serializers.Serializer):
     today = DaySummarySerializer(allow_null=True)
     days = DaySummarySerializer(many=True)
     location_id = serializers.UUIDField(allow_null=True)
+
+
+class RefreshRunSerializer(serializers.Serializer):
+    run_id = serializers.CharField()
+    trigger = serializers.CharField()
+    started_at = serializers.DateTimeField()
+    finished_at = serializers.DateTimeField(allow_null=True)
+    locations = serializers.IntegerField()
+    calls_used = serializers.IntegerField()
+    failures = serializers.IntegerField()
+    effective_interval_s = serializers.IntegerField(allow_null=True)
+    notes = serializers.CharField(allow_blank=True)
+
+
+class OpsStatusSerializer(serializers.Serializer):
+    """Shape of /ops/status (04-api §8); the nested dicts are passed through as documented."""
+
+    last_run = RefreshRunSerializer(allow_null=True)
+    last_finished_run = RefreshRunSerializer(allow_null=True)
+    configured_interval_s = serializers.IntegerField()
+    upstream = serializers.DictField()
+    breaker = serializers.DictField()
+    adhoc_cache = serializers.DictField()
+    samples = serializers.DictField()
+    versions = serializers.DictField()

@@ -2,14 +2,20 @@
 
 from django.conf import settings
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.errors import RateLimited
 
-from .. import adhoc, forecast
-from .serializers import CoordinateQuerySerializer, CurrentWeatherSerializer, ForecastSerializer
+from .. import adhoc, forecast, ops
+from .serializers import (
+    CoordinateQuerySerializer,
+    CurrentWeatherSerializer,
+    ForecastSerializer,
+    OpsStatusSerializer,
+)
 from .throttles import AdHocWeatherThrottle
 
 
@@ -85,3 +91,16 @@ class ForecastView(AdHocThrottleMixin, APIView):
         if adhoc.known_location(lat, lon) is None:
             self.throttle_adhoc(request)
         return Response(ForecastSerializer(forecast.get_forecast(lat, lon)).data)
+
+
+class OpsStatusView(APIView):
+    """GET /api/v1/ops/status (N5.5): last refresh run, upstream calls against the shares,
+    breaker state, ad hoc cache hits, sample count, versions. Every role reads it."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        summary="Operations status of the weather pipeline", responses={200: OpsStatusSerializer}
+    )
+    def get(self, request: Request) -> Response:
+        return Response(OpsStatusSerializer(ops.status()).data)

@@ -17,7 +17,7 @@ from core.errors import RateLimited, UpstreamUnavailable
 from core.redis_client import redis_connection
 from locations.models import Location
 
-from . import samples
+from . import samples, stats
 from .adhoc import KEEP_S, known_location
 from .domain.geo import cache_key, offset_label
 from .domain.summary import DaySummary, summarize
@@ -160,12 +160,14 @@ def get_forecast(lat: float, lon: float) -> dict[str, Any]:
     if raw:
         stored_at = datetime.fromisoformat(json.loads(raw)["stored_at"])
         if (datetime.now(tz=UTC) - stored_at).total_seconds() <= FRESH_S:
+            stats.record_adhoc("hit")
             return _from_cache(raw, lat, lon, "cached")
 
     try:
         fc = gateway.fetch_forecast(lat, lon, "adhoc")
     except gateway.BudgetExhausted as exc:
         if raw:
+            stats.record_adhoc("hit")
             return _from_cache(raw, lat, lon, "stale")
         raise RateLimited(
             "The weather upstream budget for ad hoc requests is spent for this minute.",
@@ -173,6 +175,7 @@ def get_forecast(lat: float, lon: float) -> dict[str, Any]:
         ) from exc
     except (breaker.BreakerOpen, UpstreamError) as exc:
         if raw:
+            stats.record_adhoc("hit")
             return _from_cache(raw, lat, lon, "stale")
         log.warning("no stored forecast for %s,%s and upstream unavailable: %s", lat, lon, exc)
         raise UpstreamUnavailable(
@@ -181,6 +184,7 @@ def get_forecast(lat: float, lon: float) -> dict[str, Any]:
         ) from exc
 
     r.set(key, _serialise(fc), ex=KEEP_S)
+    stats.record_adhoc("miss")
     zone = timezone(timedelta(seconds=fc.timezone_offset_s))
     today = datetime.now(tz=UTC).astimezone(zone).date()
     today_s, days = summarize(_rows_from_forecast(fc), zone, today=today)

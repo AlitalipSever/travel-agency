@@ -147,6 +147,10 @@ ADHOC_RATE_PER_MIN = env.int("ADHOC_RATE_PER_MIN", default=30)
 
 # Celery (02 §8.4): idempotent tasks, late acks, hard time limits, schedule in code.
 REFRESH_INTERVAL_S = env.int("REFRESH_INTERVAL_S", default=900)
+
+# Build identity reported by /api/v1/ops/status; set by the image build and the chart.
+GIT_COMMIT = env("GIT_COMMIT", default=None)
+CHART_VERSION = env("CHART_VERSION", default=None)
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = None
 CELERY_TASK_ACKS_LATE = True
