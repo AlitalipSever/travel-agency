@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down
+.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down images-push
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -75,7 +75,7 @@ web-build:       ## production build of the site
 	cd web && pnpm install && pnpm build
 
 web-lint:        ## eslint + type check of the site
-	cd web && pnpm lint && pnpm exec tsc --noEmit
+	cd web && pnpm lint && pnpm exec next typegen && pnpm exec tsc --noEmit
 
 # Platform (docs/06-operations.md §1, §2). Laptop targets; KUBECONFIG must point at the cluster.
 KUBECONFIG ?= $(HOME)/.kube/travel-agency.yaml
@@ -102,3 +102,13 @@ hello-up:        ## temporary hello page on the public host (proves DNS, ingress
 
 hello-down:      ## remove the hello page (the application chart takes over the host)
 	kubectl delete -f infra/k8s/hello/hello.yaml --ignore-not-found
+
+# Images from an arm64 laptop (Apple Silicon builds natively; CI builds the same tags on main).
+REGISTRY ?= ghcr.io/alitalipsever
+TAG ?= $(shell git rev-parse HEAD)
+PLATFORMS ?= linux/arm64
+
+images-push:     ## build api and web images for the server and push them to ghcr (needs docker login ghcr.io)
+	docker buildx build --platform $(PLATFORMS) --build-arg GIT_COMMIT=$(TAG) -t $(REGISTRY)/travel-agency-api:$(TAG) -t $(REGISTRY)/travel-agency-api:latest --push api
+	docker buildx build --platform $(PLATFORMS) -f web/Dockerfile -t $(REGISTRY)/travel-agency-web:$(TAG) -t $(REGISTRY)/travel-agency-web:latest --push .
+	@echo "pushed $(REGISTRY)/travel-agency-{api,web}:$(TAG)"
