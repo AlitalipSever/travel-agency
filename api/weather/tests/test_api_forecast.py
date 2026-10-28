@@ -75,15 +75,17 @@ def test_w2_1_five_days_from_tomorrow_and_today_separate(client: APIClient) -> N
     first = body["days"][0]["date"]
     assert body["today"] is None or body["today"]["date"] < first
     assert first > str(today_local) or tz_hours < 0  # tomorrow in the local calendar
-    assert (
-        body["today"]["partial"] is True
-    )  # ad hoc coordinate: today's past hours are missing (W2.4)
+    # ad hoc coordinate: today's past hours are missing (W2.4); late in the local evening the
+    # mock's next three hour slot already falls on tomorrow, then today is None (allowed)
+    assert body["today"] is None or body["today"]["partial"] is True
 
 
 @pytest.mark.django_db
 def test_w2_3_fifth_day_is_partial_when_cut_by_the_window(client: APIClient) -> None:
     body = client.get(URL, {"lat": -33.45, "lon": -70.66}).json()
-    assert body["days"][-1]["partial"] is True
+    # forty slots start at the next three hour slot: the fifth day is cut unless today itself
+    # had no slot left (then the five days are whole and today is None)
+    assert body["days"][-1]["partial"] is True or body["today"] is None
     assert all(d["forecast_samples"] + d["observed_samples"] >= 1 for d in body["days"][:4])
 
 
