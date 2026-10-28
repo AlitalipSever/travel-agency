@@ -17,7 +17,9 @@ make test      # 173 tests inside the container
 make lint      # ruff + mypy (laptop, needs uv)
 ```
 
-`make up` copies `.env.example` to `api/.env` when missing. Without an `OPENWEATHER_API_KEY`
+`make up` copies `.env.example` to `api/.env` when missing. After editing `api/.env` run
+`make up` (or `docker compose up -d <service>`) again: `docker compose restart` keeps the old
+environment and does not reread the file. Without an `OPENWEATHER_API_KEY`
 the weather adapter runs in mock mode from recorded payloads; with a key the worker refreshes
 the thirteen seeded capitals every fifteen minutes.
 
