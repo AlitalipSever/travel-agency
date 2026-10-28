@@ -1,0 +1,45 @@
+#cloud-config
+# First-boot recipe for the k3s server (rendered by Terraform; ${k3s_version} is the only
+# template value). Runs once. Progress: /var/log/cloud-init-output.log; done marker:
+# /var/lib/cloud/done-k3s.
+
+package_update: true
+package_upgrade: true
+packages:
+  - curl
+  - open-iscsi
+
+write_files:
+  # Mounts the Hetzner data volume at /mnt/data by UUID, so the path is stable across
+  # reboots and rebuilds. The volume is attached a moment after the server boots, hence
+  # the wait loop. Hetzner formats it as ext4 (hcloud_volume.format).
+  - path: /usr/local/sbin/mount-data.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      for _ in $(seq 1 60); do
+        dev=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -n 1 || true)
+        [ -n "$dev" ] && break
+        sleep 5
+      done
+      [ -n "$dev" ] || { echo "data volume not attached after 300 s" >&2; exit 1; }
+      if ! blkid "$dev" >/dev/null; then mkfs.ext4 -L data "$dev"; fi
+      uuid=$(blkid -s UUID -o value "$dev")
+      mkdir -p /mnt/data
+      grep -q "UUID=$uuid" /etc/fstab || echo "UUID=$uuid /mnt/data ext4 defaults,nofail 0 2" >> /etc/fstab
+      mountpoint -q /mnt/data || mount /mnt/data
+      echo "data volume $dev mounted at /mnt/data"
+
+runcmd:
+  - /usr/local/sbin/mount-data.sh
+  # Public IPv4 from the Hetzner metadata service, so the API certificate is valid for it.
+  - export PUBLIC_IP=$(curl -fsS http://169.254.169.254/hetzner/v1/metadata/public-ipv4)
+  # k3s single node. Traefik is disabled because ingress-nginx takes ports 80/443 (P2).
+  - >
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=${k3s_version} sh -s - server
+    --disable traefik
+    --tls-san "$PUBLIC_IP"
+    --write-kubeconfig-mode 0644
+  - systemctl enable --now k3s
+  - touch /var/lib/cloud/done-k3s
