@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.db import connection
@@ -14,7 +15,9 @@ from catalogue.models import Departure, Destination
 from core.models import User
 
 URL = "/api/v1/packages/bookable"
-TODAY = date.today()
+# Dates are relative to the agency's today (A16), not the container's UTC day: around
+# midnight UTC the two differ by one day and "yesterday" would still be bookable.
+TODAY: date = datetime.now(ZoneInfo("America/Lima")).date()
 
 
 def _d(days: int) -> str:
