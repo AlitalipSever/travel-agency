@@ -16,7 +16,7 @@ export default async function PlanPage() {
       <PageHeader
         eyebrow="Plan"
         title="Work packages and roadmap"
-        lead="The work cut as it would be for a team of three in two tracks, what is done with its pull request, what was deliberately left out, and the next two weeks. The requirements and the domain the plan serves are one click away."
+        lead="The work split as for a team of three, in two tracks: what is done (with its pull request), what was left out on purpose, and the next two weeks."
       />
       <div className="mx-auto max-w-6xl px-4 pb-20">
         <div className="mb-6 flex flex-wrap gap-x-4 gap-y-1 text-sm">

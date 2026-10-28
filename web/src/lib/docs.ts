@@ -1,7 +1,9 @@
 /**
  * The repository's documentation, read at build time (server only). `docs/` sits next to
- * `web/`; the Docker build copies it to the same relative place. Results are cached with
- * `use cache` so the pages prerender to static HTML.
+ * `web/`; the Docker build copies it to the same relative place. A readable rewrite of a
+ * document under `web/content/plain/` (same relative path) is preferred when it exists; the
+ * source in `docs/` stays the reference. Results are cached with `use cache` so the pages
+ * prerender to static HTML.
  */
 import "server-only";
 import { readFile, readdir } from "node:fs/promises";
@@ -9,6 +11,7 @@ import path from "node:path";
 import { cacheLife } from "next/cache";
 
 const DOCS_DIR = path.resolve(process.cwd(), "../docs");
+const PLAIN_DIR = path.resolve(process.cwd(), "content/plain");
 
 export type Doc = {
   slug: string;
@@ -16,6 +19,8 @@ export type Doc = {
   status: string | null;
   headings: { id: string; text: string; level: number }[];
   body: string;
+  /** True when the body comes from the readable version in `web/content/plain/`. */
+  plain: boolean;
 };
 
 export type AdrSummary = { id: string; slug: string; title: string; status: string };
@@ -65,9 +70,19 @@ function statusOf(body: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+/** The readable version when there is one, otherwise the source document. */
+async function readSource(relative: string): Promise<{ body: string; plain: boolean }> {
+  try {
+    return { body: await readFile(path.join(PLAIN_DIR, relative), "utf8"), plain: true };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    return { body: await readFile(path.join(DOCS_DIR, relative), "utf8"), plain: false };
+  }
+}
+
 async function readDoc(relative: string, slug: string): Promise<Doc> {
-  const body = await readFile(path.join(DOCS_DIR, relative), "utf8");
-  return { slug, title: titleOf(body, slug), status: statusOf(body), headings: headingsOf(body), body };
+  const { body, plain } = await readSource(relative);
+  return { slug, title: titleOf(body, slug), status: statusOf(body), headings: headingsOf(body), body, plain };
 }
 
 export async function getDoc(slug: string): Promise<Doc | null> {
@@ -95,7 +110,7 @@ export async function listAdrs(): Promise<AdrSummary[]> {
   const files = await adrFiles();
   const out: AdrSummary[] = [];
   for (const file of files) {
-    const body = await readFile(path.join(DOCS_DIR, "adr", file), "utf8");
+    const { body } = await readSource(`adr/${file}`);
     const id = file.slice(0, 4);
     out.push({
       id,

@@ -52,7 +52,7 @@ export default async function WalkthroughPage() {
       <PageHeader
         eyebrow="Walkthrough"
         title="Ten minutes, in order"
-        lead="The sections of 08-walkthrough, each pulling its content from the other pages. Arrow keys or space move between steps; F toggles full screen; the bar at the top is the ten minute clock."
+        lead="The ten minute path through the system, one step per screen. Arrow keys or space move between steps; F toggles full screen."
       />
       <div className="mx-auto max-w-6xl px-4 pb-20">
         <Deck steps={steps} extras={extras} />

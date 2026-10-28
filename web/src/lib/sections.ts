@@ -1,6 +1,6 @@
-/** The seven sections of the case study site (05-work-packages W1), in navigation order. */
+/** The seven sections of the case study (05-work-packages W1), reached from the "Case study" menu. */
 export const SECTIONS = [
-  { href: "/", label: "Overview", short: "What the system is and how it is built" },
+  { href: "/case-study", label: "Overview", short: "What the system is and how it is built" },
   { href: "/demo", label: "Live demo", short: "Brackets, forecasts and the bookable search against the API" },
   { href: "/api", label: "API", short: "The OpenAPI contract, browsable" },
   { href: "/decisions", label: "Decisions", short: "Every architecture decision record" },
