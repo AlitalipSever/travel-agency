@@ -20,6 +20,12 @@ acceptance checks pass in CI.
 | B7 Departures | 2026-10-27 (PR #8) | P3.1 to P3.5, P1.6; cancel idempotent under the row lock | Booking tables created here (model only) so seats are real; rules and endpoints with B9 |
 | B8 Bookable search | 2026-10-27 (PR #9) | P5.1 to P5.5, N3.1 (five queries per page); P5.7 measured in `docs/plans/bookable.md` | One partial index took query 1 from 1,340 ms to 21 ms on 20,000 departures |
 | B12 (part) Operations status | 2026-10-28 | N5.5: `/api/v1/ops/status` with last run, shares, breaker, ad hoc cache counters, sample count, versions | Demo seed landed earlier (PR #10); nightly demo reset still open |
+| W1 Site skeleton | 2026-10-28 (PR #11) | Served at `/`; builds in CI; demo token server side through the proxy route (ADR 0015) | Seven sections; Spectral theme |
+| W2 Documents and decisions | 2026-10-28 (PR #13, #19) | N1.5: every diagram of 02 renders; documents and ADRs from the repository at build time | Mermaid client side |
+| W3 Live demo | 2026-10-28 (PR #14, #19) | Brackets map, forecast panel, bookable search, booking with the 200 replay, the 409 and cancel | Map from world-atlas, no tiles |
+| W4 API browser and Plan | 2026-10-28 (PR #15, #19) | OpenAPI document read from the API; 05 and 07 rendered | Swagger UI linked on the API origin (frame denied) |
+| W5 Operations page | 2026-10-28 (PR #17) | Live numbers match `/ops/status`, read every 30 s | Shares drawn on the thermal scale |
+| W6 Walkthrough | 2026-10-28 (PR #18, #20) | The nine steps of 08 as a keyboard driven deck with a ten minute clock | Pulls the demo, status and summary into the steps |
 | B9 Booking | 2026-10-28 (PR #12) | P6.1 to P6.6, N6.2 with two partner tokens; P6.2 concurrency test, 20 rounds of two threads on the last seat | P6.7 attribution lands with B11; `/partners` endpoint deferred (admin creates partners) |
 
 ## 2. Deliberately left out
