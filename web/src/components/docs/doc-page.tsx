@@ -23,6 +23,11 @@ export function DocPage({
         <p className="label-mono mt-6 text-muted-foreground">{eyebrow}</p>
         <h1 className="mt-2 text-3xl font-medium tracking-tight sm:text-4xl">{doc.title}</h1>
         {doc.status ? <p className="mt-2 font-mono text-xs text-muted-foreground">Status: {doc.status}</p> : null}
+        {doc.plain ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Readable version for the site; the source document is in the repository.
+          </p>
+        ) : null}
         <div className="prose prose-neutral dark:prose-invert mt-8 max-w-none prose-headings:scroll-mt-20 prose-headings:font-medium prose-headings:tracking-tight prose-a:text-spectral-sky prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:text-foreground">
           <Markdown body={doc.body} from={from} />
         </div>
