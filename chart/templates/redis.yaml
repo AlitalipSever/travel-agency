@@ -1,0 +1,51 @@
+# Cache and Celery broker only; nothing durable lives here (02-architecture §7.2).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ta.name" . }}-redis
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ta.selector" (dict "ctx" . "component" "redis") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ta.selector" (dict "ctx" . "component" "redis") | nindent 8 }}
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          args: ["--save", "", "--appendonly", "no", "--maxmemory", "200mb", "--maxmemory-policy", "allkeys-lru"]
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ta.name" . }}-redis
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "ta.selector" (dict "ctx" . "component" "redis") | nindent 4 }}
+  ports:
+    - port: 6379
+      targetPort: 6379

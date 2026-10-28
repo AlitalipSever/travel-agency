@@ -1,5 +1,7 @@
 # travel-agency
 
+Live: https://travel-agency.asever.dev (site, `/api/docs` for Swagger UI; demo tokens below).
+
 Backend for a travel agency: live weather and five day forecasts for the agency's locations,
 locations grouped by temperature bracket, tour packages with ordered destinations and a derived
 danger score, dated departures with capacity, and the bookable-packages search by date range
@@ -13,7 +15,7 @@ Requirements: Docker (Docker Desktop or Colima) and `make`.
 ```
 make up        # postgres, redis, migrate + seed, api, worker, beat   → http://localhost:8000
 make demo      # demo partner, four users with tokens, packages, departures, bookings
-make test      # 173 tests inside the container
+make test      # 181 tests inside the container
 make lint      # ruff + mypy (laptop, needs uv)
 ```
 
@@ -82,8 +84,10 @@ The documentation starts at [docs/README.md](docs/README.md): the ten minute wal
 
 ## Status
 
-The brief's required scope runs locally end to end (work packages B1 to B8 and L1,
-[docs/07-roadmap.md](docs/07-roadmap.md) §1). Next, in order: bookings with concurrency and
-idempotency (B9), operations status and demo reset (B12), the Helm chart on kind and on a
-Hetzner k3s node (P5, L2, Track B), the case study site (W1 to W6). What was deliberately left
-out and why is in 07-roadmap §2.
+The brief's required scope (B1 to B8), bookings (B9), the operations status (B12) and the case
+study site (W1 to W6) run locally with `docker compose` and live on one Hetzner k3s node:
+Terraform for the server (`infra/terraform`), ingress-nginx and cert-manager with Let's Encrypt
+(`infra/k8s`, `make bootstrap`), one Helm chart for the whole application (`chart/`,
+`make deploy`), CI on every pull request. [docs/07-roadmap.md](docs/07-roadmap.md) §1 lists what
+is done and §2 what was deliberately left out (CloudNativePG, CI deploy, kind) and why.
+[docs/06-operations.md](docs/06-operations.md) is the runbook.

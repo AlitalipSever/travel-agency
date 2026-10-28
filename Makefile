@@ -5,7 +5,7 @@ COMPOSE := docker compose
 API := $(COMPOSE) run --rm --no-deps api
 API_DB := $(COMPOSE) run --rm api
 
-.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down images-push
+.PHONY: help up down logs worker-logs refresh ps build migrate seed demo makemigrations test test-fast lint fmt shell superuser psql env web-dev web-build web-lint infra-plan infra-apply bootstrap hello-up hello-down images-push secrets secrets-check deploy
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -112,3 +112,29 @@ images-push:     ## build api and web images for the server and push them to ghc
 	docker buildx build --platform $(PLATFORMS) --build-arg GIT_COMMIT=$(TAG) -t $(REGISTRY)/travel-agency-api:$(TAG) -t $(REGISTRY)/travel-agency-api:latest --push api
 	docker buildx build --platform $(PLATFORMS) -f web/Dockerfile -t $(REGISTRY)/travel-agency-web:$(TAG) -t $(REGISTRY)/travel-agency-web:latest --push .
 	@echo "pushed $(REGISTRY)/travel-agency-{api,web}:$(TAG)"
+
+NAMESPACE ?= travel-agency
+VALUES ?= chart/values-hetzner.yaml
+
+secrets:         ## create the application Secret in the cluster (prompts; nothing written to disk)
+	@printf 'OpenWeatherMap API key: '; read -rs OWM; echo; \
+	printf 'Django secret key [generate]: '; read -rs DSK; echo; \
+	printf 'PostgreSQL password [generate]: '; read -rs PGP; echo; \
+	printf 'Demo partner token [empty]: '; read -rs DPT; echo; \
+	DSK=$${DSK:-$$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-50)}; \
+	PGP=$${PGP:-$$(openssl rand -base64 32 | tr -d '/+=' | cut -c1-32)}; \
+	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f - >/dev/null; \
+	kubectl -n $(NAMESPACE) delete secret travel-agency-app --ignore-not-found >/dev/null; \
+	kubectl -n $(NAMESPACE) create secret generic travel-agency-app \
+	  --from-literal=OPENWEATHER_API_KEY="$$OWM" \
+	  --from-literal=DJANGO_SECRET_KEY="$$DSK" \
+	  --from-literal=POSTGRES_PASSWORD="$$PGP" \
+	  --from-literal=DATABASE_URL="postgres://travel:$$PGP@travel-agency-postgres:5432/travel" \
+	  --from-literal=DEMO_PARTNER_TOKEN="$$DPT"
+
+secrets-check:   ## show that the application Secret exists and which keys it holds (never values)
+	kubectl -n $(NAMESPACE) get secret travel-agency-app -o go-template='{{range $$k, $$v := .data}}{{$$k}}{{"\n"}}{{end}}'
+
+deploy:          ## helm upgrade --install the chart with TAG (default: HEAD) and VALUES
+	helm upgrade --install travel-agency chart -n $(NAMESPACE) --create-namespace -f $(VALUES) --set image.tag=$(TAG) --wait --timeout 10m
+	helm -n $(NAMESPACE) history travel-agency | tail -3

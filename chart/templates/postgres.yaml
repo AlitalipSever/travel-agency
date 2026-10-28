@@ -1,0 +1,95 @@
+{{- if eq .Values.postgres.mode "builtin" }}
+# Single PostgreSQL instance on a persistent volume (ADR 0007 fallback; CloudNativePG is
+# `postgres.mode: cnpg`, P3). On the Hetzner node the volume is a hostPath on the data disk;
+# elsewhere a storageClass provides it.
+{{- if .Values.postgres.storage.hostPath }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "ta.name" . }}-postgres
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.postgres.storage.size }}
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ .Values.postgres.storage.storageClassName | quote }}
+  hostPath:
+    path: {{ .Values.postgres.storage.hostPath }}
+    type: DirectoryOrCreate
+  claimRef:
+    namespace: {{ .Release.Namespace }}
+    name: data-{{ include "ta.name" . }}-postgres-0
+---
+{{- end }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ta.name" . }}-postgres
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "ta.selector" (dict "ctx" . "component" "postgres") | nindent 4 }}
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "ta.name" . }}-postgres
+  labels:
+    {{- include "ta.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  serviceName: {{ include "ta.name" . }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ta.selector" (dict "ctx" . "component" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ta.selector" (dict "ctx" . "component" "postgres") | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 70   # postgres group in the alpine image
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}, "-d", {{ .Values.postgres.database | quote }}]
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.postgres.storage.storageClassName | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage.size }}
+{{- end }}
