@@ -21,7 +21,18 @@ spec:
     - host: {{ .Values.host | quote }}
       http:
         paths:
-          {{- range list "/api" "/admin" "/static" }}
+          {{- /* The site's own routes under /api (demo proxy, docs link) stay with web; the longer
+               prefix wins over /api below. */}}
+          {{- range list "/api/proxy" "/api/docs-link" }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "ta.name" $ }}-web
+                port:
+                  name: http
+          {{- end }}
+          {{- range list "/api" "/admin" "/static" "/readyz" }}
           - path: {{ . }}
             pathType: Prefix
             backend:

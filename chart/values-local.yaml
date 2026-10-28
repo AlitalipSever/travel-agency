@@ -10,6 +10,7 @@ api:
 config:
   DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,travel-agency-api
   NEXT_PUBLIC_API_URL: http://localhost
+  API_PUBLIC_URL: http://localhost
 postgres:
   storage:
     hostPath: ""

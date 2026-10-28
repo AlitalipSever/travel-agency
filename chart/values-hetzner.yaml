@@ -5,6 +5,7 @@ ingress:
 config:
   DJANGO_ALLOWED_HOSTS: travel-agency.asever.dev,travel-agency-api
   NEXT_PUBLIC_API_URL: https://travel-agency.asever.dev
+  API_PUBLIC_URL: https://travel-agency.asever.dev
 postgres:
   storage:
     hostPath: /mnt/data/postgres
