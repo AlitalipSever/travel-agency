@@ -1,9 +1,11 @@
 # web
 
-The case study site (work packages W1 to W6): Next.js App Router, TypeScript, Tailwind, shadcn/ui.
+The web site: a demo agency (Andes & Coast) running on the platform, plus the engineering pages
+(architecture, decisions, API, operations). Next.js App Router, TypeScript, Tailwind, shadcn/ui, Leaflet.
 
 ```
-src/app/              routes: / (overview), /demo, /api, /decisions, /plan, /operations, /walkthrough
+src/app/              agency routes: /, /destinations, /tours, /about
+                      engineering routes: /case-study (overview), /demo, /api, /decisions, /plan, /operations, /walkthrough
 src/app/api/proxy/    browser to API bridge; adds the demo partner token server side (ADR 0015)
 src/app/healthz/      liveness for the container and the chart
 src/components/site/  header, navigation, footer, page header

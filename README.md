@@ -1,12 +1,42 @@
 # travel-agency
 
-Live: https://travel-agency.asever.dev (the agency site; the case study pages are behind the "Case study" menu; `/api/docs` for Swagger UI; demo tokens below).
+An open source SaaS platform for small travel agencies. It runs the parts an agency sells
+from: destinations with live weather and five day forecasts, tour packages with clear
+adventure levels, dated departures with seats, and bookings by staff and partners through
+one API. Built with Django, Celery, PostgreSQL and Redis, served by a Next.js site, and
+deployed on Hetzner with Terraform, Kubernetes (k3s) and Helm.
 
-Backend for a travel agency: live weather and five day forecasts for the agency's locations,
-locations grouped by temperature bracket, tour packages with ordered destinations and a derived
-danger score, dated departures with capacity, and the bookable-packages search by date range
-and danger score. Django 5.2 + Django REST Framework, Celery, PostgreSQL 16, Redis 7, packaged
-with Docker and run locally with `docker compose`.
+**Live demo:** https://travel-agency.asever.dev. Andes & Coast is a made-up agency running on
+this platform; bookings there are not real. The top menu also links the architecture, the
+decisions, the API (`/api/docs`, Swagger UI) and a live operations page.
+
+## What it does
+
+- **Weather for every destination.** A background worker keeps current weather and a five day
+  forecast for each location, grouped by temperature bracket; any other point on the map is
+  answered on demand, within a call budget and behind a circuit breaker.
+- **Tours that say how hard they are.** Packages list their destinations in order; a package's
+  adventure level is derived from its most demanding destination, never typed in.
+- **Departures with real seats.** Capacity belongs to a departure date; remaining seats come
+  from confirmed bookings.
+- **Search what can still be booked.** Free departures in a date range up to a chosen adventure
+  level, in one measured query.
+- **Safe bookings.** A row lock per departure, idempotency keys for retries, a 409 when the last
+  seat is gone, and partners only ever see their own travellers and bookings.
+- **Roles.** Operations, sales, partner and finance, each with its own token and permissions.
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| API | Python 3.13, Django 5.2, Django REST Framework, drf-spectacular (OpenAPI), RFC 7807 errors |
+| Background jobs | Celery worker and beat, Redis 7 |
+| Database | PostgreSQL 16 |
+| Web | Next.js 16, TypeScript, Tailwind, shadcn/ui, Leaflet |
+| Weather data | OpenWeatherMap |
+| Infrastructure | Hetzner Cloud (ARM), Terraform, k3s, ingress-nginx, cert-manager with Let's Encrypt, Cloudflare DNS |
+| Packaging | Docker multi-arch images on ghcr.io, one Helm chart for the whole system |
+| Quality | pytest (181 tests), ruff, mypy, eslint, tsc; GitHub Actions on every pull request |
 
 ## Run it
 
@@ -36,7 +66,7 @@ Every API call needs `Authorization: Token <value>`; `make demo` prints one toke
 In Swagger UI click **Authorize** and enter the whole header value, `Token <value>`, with the
 word `Token` and a space in front of the key.
 
-## Try the brief's three parts
+## Try the API
 
 ```
 T="Authorization: Token <demo-sales token>"
@@ -66,28 +96,46 @@ Errors come back as RFC 7807 `application/problem+json` (400, 401, 403, 404, 409
 - The bookable search is two queries per page; its plan was measured on 20,000 departures and
   one partial index took it from 1.3 s to 21 ms (`docs/plans/bookable.md`).
 
+## Deploy
+
+One server, one chart. The full runbook is [docs/06-operations.md](docs/06-operations.md).
+
+```
+make infra-apply   # Terraform: Hetzner server, firewall, data volume, k3s via cloud-init
+make bootstrap     # ingress-nginx, cert-manager, Let's Encrypt issuers
+make secrets       # application secrets into the cluster (typed, never stored in git)
+make images-push   # build and push the api and web images to ghcr.io
+make deploy        # helm upgrade --install: migrate job, api, worker, beat, web, PostgreSQL, Redis
+```
+
 ## Layout
 
 ```
-Makefile              Single entry point
+Makefile              Single entry point (make help)
 docker-compose.yml    Local stack: api, worker, beat, postgres, redis
 .env.example          Variable names, never values
-docs/                 Domain, requirements, architecture (arc42 + C4), data model, API, ADRs, plans
 api/                  Django project: config/ (settings, urls, celery) and the apps
                       core/ (users, roles, settings table, errors), weather/, locations/,
                       catalogue/ (types, destinations, packages, departures, bookable search),
-                      booking/ (tables; rules and endpoints are next); each app has its tests/
+                      booking/ (travellers, bookings); each app has its tests/
+web/                  Next.js site: the demo agency and the engineering pages
+chart/                Helm chart for the whole system
+infra/terraform/      Hetzner server, firewall, volume, k3s
+infra/k8s/            Cluster add-ons: ingress-nginx, cert-manager, issuers
+.github/workflows/    CI: lint, types, tests, multi-arch images
+docs/                 Domain, requirements, architecture (arc42 + C4), data model, API, ADRs, plans
 ```
 
-The documentation starts at [docs/README.md](docs/README.md): the ten minute walkthrough is
-[docs/08-walkthrough.md](docs/08-walkthrough.md), the decisions are in [docs/adr](docs/adr/README.md).
+## Documentation
+
+Start at [docs/README.md](docs/README.md). The architecture is
+[docs/02-architecture.md](docs/02-architecture.md), every decision is an ADR in
+[docs/adr](docs/adr/README.md), and [docs/08-walkthrough.md](docs/08-walkthrough.md) is a ten
+minute path through the system.
 
 ## Status
 
-The brief's required scope (B1 to B8), bookings (B9), the operations status (B12) and the case
-study site (W1 to W6) run locally with `docker compose` and live on one Hetzner k3s node:
-Terraform for the server (`infra/terraform`), ingress-nginx and cert-manager with Let's Encrypt
-(`infra/k8s`, `make bootstrap`), one Helm chart for the whole application (`chart/`,
-`make deploy`), CI on every pull request. [docs/07-roadmap.md](docs/07-roadmap.md) §1 lists what
-is done and §2 what was deliberately left out (CloudNativePG, CI deploy, kind) and why.
-[docs/06-operations.md](docs/06-operations.md) is the runbook.
+Running in production on one Hetzner k3s node. Single tenant today: one agency per
+installation. [docs/07-roadmap.md](docs/07-roadmap.md) lists what is done, what was left out on
+purpose (multi tenancy, operator-managed PostgreSQL with backups, deploy from CI, high
+availability) and what comes next.
