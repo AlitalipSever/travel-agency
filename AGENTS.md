@@ -7,7 +7,8 @@ other than the libraries and services used.
 
 ## What this is
 
-A travel agency backend built from a written brief (docs/01-requirements.md). The brief is the
+An open source SaaS platform for travel agencies: a Django API, background jobs, a Next.js
+site and the infrastructure to run them (Terraform, k3s, Helm). docs/01-requirements.md is the
 source of truth for scope; assumptions that fill its gaps are listed there and decided in ADRs.
 
 ## Rules
