@@ -1,4 +1,4 @@
-# Case study site (W1). Multi-stage: install, build, then a minimal standalone runtime as a
+# Web site (W1). Multi-stage: install, build, then a minimal standalone runtime as a
 # non-root user. The build context is the repository root so that docs/ can be read at build
 # time: docker build -f web/Dockerfile -t travel-agency-web .
 FROM node:24-alpine AS base
