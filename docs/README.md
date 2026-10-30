@@ -13,6 +13,7 @@
 | [06-operations.md](06-operations.md) | Runbook: deploy, rollback, backups, secrets, health, what to look at when something is wrong |
 | [07-roadmap.md](07-roadmap.md) | What is done, what was deliberately left out, what the next two weeks would bring |
 | [08-walkthrough.md](08-walkthrough.md) | The ten minute walkthrough of the system, in order |
+| [09-code-map.md](09-code-map.md) | Where the code lives and how each request and job moves through the files |
 
 Conventions: arc42 headings for architecture, C4 levels for diagrams (context, container,
 component), ADRs in the MADR style. Diagrams are kept as Mermaid in the markdown and rendered
