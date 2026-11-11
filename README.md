@@ -6,9 +6,9 @@ adventure levels, dated departures with seats, and bookings by staff and partner
 one API. Built with Django, Celery, PostgreSQL and Redis, served by a Next.js site, and
 deployed on Hetzner with Terraform, Kubernetes (k3s) and Helm.
 
-**Live demo:** https://travel-agency.asever.dev. Andes & Coast is a made-up agency running on
-this platform; bookings there are not real. The top menu also links the architecture, the
-decisions, the API (`/api/docs`, Swagger UI) and a live operations page.
+**Live demo retired 2026-11-10; the deployment moved on.** It ran on Hetzner from 2026-10-28
+as Andes & Coast, a made-up agency; `make up` and `make web-dev` bring it up locally, and
+[docs/06-operations.md](docs/06-operations.md) keeps the recipe for a cluster.
 
 ## What it does
 
